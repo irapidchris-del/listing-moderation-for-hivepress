@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<ruleset name="Listing Moderation for HivePress">
+	<description>Coding standards for the Automated Listing Moderation for HivePress plugin.</description>
+
+	<!-- Scan the plugin's own PHP; skip Composer and build artefacts. -->
+	<file>.</file>
+	<arg name="extensions" value="php"/>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+
+	<!-- Show sniff codes and a progress bar; use colours. -->
+	<arg value="ps"/>
+	<arg name="colors"/>
+
+	<!-- WordPress Coding Standards. -->
+	<rule ref="WordPress">
+		<!-- The plugin deliberately uses modern short array syntax ([] not array()). -->
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+		<!-- Double-arrow alignment is left to the author's discretion. -->
+		<exclude name="WordPress.Arrays.MultipleStatementAlignment"/>
+		<!-- Misfires on docblock code examples and sentences that open with a function name. -->
+		<exclude name="Generic.Commenting.DocComment.LongNotCapital"/>
+	</rule>
+
+	<!-- Validate that translation calls use this plugin's text domain. -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="listing-moderation-for-hivepress"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Match the versions declared in the plugin header. -->
+	<config name="minimum_supported_wp_version" value="5.3"/>
+	<rule ref="PHPCompatibilityWP"/>
+	<config name="testVersion" value="7.4-"/>
+</ruleset>

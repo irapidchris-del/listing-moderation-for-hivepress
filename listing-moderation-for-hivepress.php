@@ -688,7 +688,7 @@ function hpalm_backfill_hashes() {
 		[
 			'post_type'        => 'hp_listing',
 			'post_status'      => 'any',
-			'numberposts'      => 200,
+			'numberposts'      => 200, // phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_numberposts -- fixed background backfill batch size, bounded by design.
 			'meta_query'       => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				[
 					'key'     => '_hpalm_desc_hash',
@@ -1740,10 +1740,9 @@ function hpalm_get_starter_list() {
  */
 function hpalm_render_import_button() {
 	// $_GET values can be arrays (?page[]=x), and sanitize_key() would pass
-	// one into strtolower(), a fatal TypeError on PHP 8. Narrow to string
-	// first; a non-string page can never be the settings screen anyway.
-	$raw  = isset( $_GET['page'] ) ? wp_unslash( $_GET['page'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$page = is_string( $raw ) ? sanitize_key( $raw ) : '';
+	// one into strtolower(), a fatal TypeError on PHP 8. Guard for a string
+	// before sanitising; a non-string page can never be the settings screen.
+	$page = ( isset( $_GET['page'] ) && is_string( $_GET['page'] ) ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only check of which admin screen is shown; no state is changed.
 
 	if ( 'hp_settings' !== $page || ! current_user_can( 'manage_options' ) ) {
 		return;

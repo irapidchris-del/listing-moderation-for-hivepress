@@ -1,0 +1,26 @@
+{
+	"name": "chrisb/listing-moderation-for-hivepress",
+	"description": "Blocks or risk-scores HivePress listing submissions containing blocked words, contact details, duplicate content or AI-flagged text and photos.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"homepage": "https://github.com/irapidchris-del/listing-moderation-for-hivepress",
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"squizlabs/php_codesniffer": "^3.9",
+		"wp-coding-standards/wpcs": "^3.1",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"scripts": {
+		"lint": "find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 -P4 php -l",
+		"phpcs": "phpcs",
+		"phpcbf": "phpcbf"
+	}
+}
