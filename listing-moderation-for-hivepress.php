@@ -8,7 +8,7 @@
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: automated-listing-moderation-for-hivepress
+ * Text Domain: listing-moderation-for-hivepress
  * Requires at least: 5.3
  * Requires PHP: 7.4
  * Requires Plugins: hivepress
@@ -135,8 +135,8 @@ defined( 'ABSPATH' ) || exit;
  */
 function hpalm_get_mode_options() {
 	return [
-		'block' => esc_html__( 'Block submission', 'automated-listing-moderation-for-hivepress' ),
-		'score' => esc_html__( 'Add to risk score', 'automated-listing-moderation-for-hivepress' ),
+		'block' => esc_html__( 'Block submission', 'listing-moderation-for-hivepress' ),
+		'score' => esc_html__( 'Add to risk score', 'listing-moderation-for-hivepress' ),
 	];
 }
 
@@ -155,29 +155,29 @@ function hpalm_register_settings( $settings ) {
 		$modes = hpalm_get_mode_options();
 
 		$settings['listings']['sections']['automated_moderation'] = [
-			'title'  => esc_html__( 'Automated Moderation', 'automated-listing-moderation-for-hivepress' ),
+			'title'  => esc_html__( 'Automated Moderation', 'listing-moderation-for-hivepress' ),
 			'_order' => 25,
 
 			'fields' => [
 				'listing_bypass_verified_vendors'      => [
-					'label'       => esc_html__( 'Verified Vendors', 'automated-listing-moderation-for-hivepress' ),
-					'caption'     => esc_html__( 'Skip checks for verified vendors', 'automated-listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'Skip every moderation check for listings from vendors marked as verified. Vendors can be verified by ticking the Verified checkbox on their profile in the WordPress dashboard.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Verified Vendors', 'listing-moderation-for-hivepress' ),
+					'caption'     => esc_html__( 'Skip checks for verified vendors', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'Skip every moderation check for listings from vendors marked as verified. Vendors can be verified by ticking the Verified checkbox on their profile in the WordPress dashboard.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 2,
 				],
 
 				'listing_velocity_limit'               => [
-					'label'       => esc_html__( 'Submission Limit', 'automated-listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'The maximum number of listings each vendor can submit within 24 hours. Editing an existing listing does not count towards the limit. Leave empty to disable.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Submission Limit', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'The maximum number of listings each vendor can submit within 24 hours. Editing an existing listing does not count towards the limit. Leave empty to disable.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'number',
 					'min_value'   => 1,
 					'_order'      => 4,
 				],
 
 				'listing_blocked_keywords'             => [
-					'label'       => esc_html__( 'Blocked Keywords', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Words or phrases that block a listing from being submitted. Separate with commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>. For whole-word matching, use Blocked Patterns with <code>\b</code> boundaries instead. The button below imports a starter list of common profanity.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Blocked Keywords', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Words or phrases that block a listing from being submitted. Separate with commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>. For whole-word matching, use Blocked Patterns with <code>\b</code> boundaries instead. The button below imports a starter list of common profanity.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => 'cheap, cash in hand, whatsapp me',
 					'type'        => 'textarea',
 					'max_length'  => 10240,
@@ -185,8 +185,8 @@ function hpalm_register_settings( $settings ) {
 				],
 
 				'listing_blocked_patterns'             => [
-					'label'       => esc_html__( 'Blocked Patterns', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Advanced: regular expressions, <strong>one per line only</strong>. Commas are regex syntax, so they do not separate patterns here. No delimiters, case-insensitive. Examples: <code>\bclass\b</code> blocks the whole word only, not "classic". <code>\bcash\s*only\b</code> blocks "cash only" with any spacing. <code>colou?r</code> blocks both spellings. Escape a literal ~ as <code>\~</code>. Invalid patterns are skipped. Note: WordPress strips angle brackets on save, so assertions containing &lt; cannot be used.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Blocked Patterns', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Advanced: regular expressions, <strong>one per line only</strong>. Commas are regex syntax, so they do not separate patterns here. No delimiters, case-insensitive. Examples: <code>\bclass\b</code> blocks the whole word only, not "classic". <code>\bcash\s*only\b</code> blocks "cash only" with any spacing. <code>colou?r</code> blocks both spellings. Escape a literal ~ as <code>\~</code>. Invalid patterns are skipped. Note: WordPress strips angle brackets on save, so assertions containing &lt; cannot be used.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => '\bcash\s*only\b',
 					'type'        => 'textarea',
 					'max_length'  => 10240,
@@ -194,87 +194,87 @@ function hpalm_register_settings( $settings ) {
 				],
 
 				'listing_block_evasion'                => [
-					'label'       => esc_html__( 'Catch Character Evasion', 'automated-listing-moderation-for-hivepress' ),
-					'caption'     => esc_html__( 'Also match accented and leet-speak look-alikes of blocked words', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Re-checks keywords and patterns against copies of the text with accents removed, invisible characters stripped and common leet substitutions reversed, so blocking <code>fuck</code> also catches <code>fùck</code> and zero-width-character tricks, and blocking <code>shit</code> also catches <code>sh1t</code> and <code>$hit</code>. Substitutions are reversed to their look-alike letter (0 becomes o, 1 becomes i or l, $ becomes s), so a substitution that changes the word (like <code>f0ck</code>) needs its own keyword or pattern. Legitimate accented text (e.g. "café", French names) is NOT blocked by this option; it only widens what your existing keywords match.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Catch Character Evasion', 'listing-moderation-for-hivepress' ),
+					'caption'     => esc_html__( 'Also match accented and leet-speak look-alikes of blocked words', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Re-checks keywords and patterns against copies of the text with accents removed, invisible characters stripped and common leet substitutions reversed, so blocking <code>fuck</code> also catches <code>fùck</code> and zero-width-character tricks, and blocking <code>shit</code> also catches <code>sh1t</code> and <code>$hit</code>. Substitutions are reversed to their look-alike letter (0 becomes o, 1 becomes i or l, $ becomes s), so a substitution that changes the word (like <code>f0ck</code>) needs its own keyword or pattern. Legitimate accented text (e.g. "café", French names) is NOT blocked by this option; it only widens what your existing keywords match.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 30,
 				],
 
 				'listing_block_phones'                 => [
-					'label'       => esc_html__( 'Phone Numbers', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects sequences of 9 to 14 digits, optionally separated by spaces, dashes or brackets, with an optional leading +, e.g. <code>07123 456789</code> or <code>+44 7911 123456</code>. Prices, years and dates are not affected. Sharing phone numbers is often an attempt to move bookings off-platform.', 'automated-listing-moderation-for-hivepress' ),
-					'placeholder' => esc_html__( 'Disabled', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Phone Numbers', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects sequences of 9 to 14 digits, optionally separated by spaces, dashes or brackets, with an optional leading +, e.g. <code>07123 456789</code> or <code>+44 7911 123456</code>. Prices, years and dates are not affected. Sharing phone numbers is often an attempt to move bookings off-platform.', 'listing-moderation-for-hivepress' ),
+					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
 					'_order'      => 40,
 				],
 
 				'listing_block_emails'                 => [
-					'label'       => esc_html__( 'Email Addresses', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects anything shaped like an email address, e.g. <code>name@example.com</code>. Obfuscated forms ("name at gmail dot com") are not detected; add a Blocked Pattern for those if needed.', 'automated-listing-moderation-for-hivepress' ),
-					'placeholder' => esc_html__( 'Disabled', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Email Addresses', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects anything shaped like an email address, e.g. <code>name@example.com</code>. Obfuscated forms ("name at gmail dot com") are not detected; add a Blocked Pattern for those if needed.', 'listing-moderation-for-hivepress' ),
+					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
 					'_order'      => 50,
 				],
 
 				'listing_block_urls'                   => [
-					'label'       => esc_html__( 'Website Addresses', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects links starting with http, https or www, plus bare domains ending in a common extension such as <code>example.com</code> or <code>example.co.uk</code>. Note this also applies to your own site address if vendors mention it.', 'automated-listing-moderation-for-hivepress' ),
-					'placeholder' => esc_html__( 'Disabled', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Website Addresses', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects links starting with http, https or www, plus bare domains ending in a common extension such as <code>example.com</code> or <code>example.co.uk</code>. Note this also applies to your own site address if vendors mention it.', 'listing-moderation-for-hivepress' ),
+					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
 					'_order'      => 60,
 				],
 
 				'listing_check_duplicate_titles'       => [
-					'label'       => esc_html__( 'Duplicate Titles', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects when another live or pending listing already has the same title (ignoring case and extra spaces). Compares a precomputed fingerprint of each listing rather than scanning listing content, so it costs one extra database query per submission. Existing listings are fingerprinted automatically in the background after you enable this.', 'automated-listing-moderation-for-hivepress' ),
-					'placeholder' => esc_html__( 'Disabled', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Duplicate Titles', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects when another live or pending listing already has the same title (ignoring case and extra spaces). Compares a precomputed fingerprint of each listing rather than scanning listing content, so it costs one extra database query per submission. Existing listings are fingerprinted automatically in the background after you enable this.', 'listing-moderation-for-hivepress' ),
+					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
 					'_order'      => 70,
 				],
 
 				'listing_check_duplicate_descriptions' => [
-					'label'       => esc_html__( 'Duplicate Descriptions', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects when another live or pending listing already has an identical description (ignoring case, formatting and extra spaces). Like duplicate titles, this compares stored fingerprints rather than scanning content. Near-duplicates with small wording changes are not detected.', 'automated-listing-moderation-for-hivepress' ),
-					'placeholder' => esc_html__( 'Disabled', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Duplicate Descriptions', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects when another live or pending listing already has an identical description (ignoring case, formatting and extra spaces). Like duplicate titles, this compares stored fingerprints rather than scanning content. Near-duplicates with small wording changes are not detected.', 'listing-moderation-for-hivepress' ),
+					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
 					'_order'      => 80,
 				],
 
 				'listing_block_ai'                     => [
-					'label'       => esc_html__( 'AI Text Review (OpenAI)', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Sends the listing text to OpenAI\'s free Moderation endpoint (model omni-moderation-latest), which flags hate, harassment, violence, self-harm and sexual content. Requires an OpenAI API key, entered on the Integrations tab. Listing text is sent to OpenAI\'s servers; disclose this in your privacy policy. If the API is unreachable, submissions proceed unchecked rather than failing.', 'automated-listing-moderation-for-hivepress' ),
-					'placeholder' => esc_html__( 'Disabled', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'AI Text Review (OpenAI)', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Sends the listing text to OpenAI\'s free Moderation endpoint (model omni-moderation-latest), which flags hate, harassment, violence, self-harm and sexual content. Requires an OpenAI API key, entered on the Integrations tab. Listing text is sent to OpenAI\'s servers; disclose this in your privacy policy. If the API is unreachable, submissions proceed unchecked rather than failing.', 'listing-moderation-for-hivepress' ),
+					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
 					'_order'      => 90,
 				],
 
 				'listing_block_ai_images'              => [
-					'label'       => esc_html__( 'AI Photo Review (OpenAI)', 'automated-listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'Check listing photos with the free OpenAI moderation endpoint. All photos are reviewed in a single request. Requires an OpenAI API key on the Integrations tab, and the site must be publicly reachable so OpenAI can fetch the photos. If the service is unavailable the submission proceeds unchecked.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'AI Photo Review (OpenAI)', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'Check listing photos with the free OpenAI moderation endpoint. All photos are reviewed in a single request. Requires an OpenAI API key on the Integrations tab, and the site must be publicly reachable so OpenAI can fetch the photos. If the service is unavailable the submission proceeds unchecked.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => hpalm_get_mode_options(),
-					'placeholder' => esc_html__( 'Disabled', 'automated-listing-moderation-for-hivepress' ),
+					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'_order'      => 95,
 				],
 
 				'listing_score_caps'                   => [
-					'label'       => esc_html__( 'Excessive Capitals', 'automated-listing-moderation-for-hivepress' ),
-					'caption'     => esc_html__( 'Add shouty text to the risk score', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Adds risk points when a field is written mostly in capitals (70% or more of at least 12 letters), e.g. "BUY NOW CHEAP!!!". This is a risk signal only, never an outright block, and only counts when a Risk Threshold is set below.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Excessive Capitals', 'listing-moderation-for-hivepress' ),
+					'caption'     => esc_html__( 'Add shouty text to the risk score', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Adds risk points when a field is written mostly in capitals (70% or more of at least 12 letters), e.g. "BUY NOW CHEAP!!!". This is a risk signal only, never an outright block, and only counts when a Risk Threshold is set below.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 100,
 				],
 
 				'listing_risk_threshold'               => [
-					'label'       => esc_html__( 'Risk Threshold', 'automated-listing-moderation-for-hivepress' ),
-					'description' => __( 'Enables risk scoring. Signals set to "Add to risk score" accumulate points: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. If the total reaches this threshold, the listing is accepted but held as Pending for your review instead of publishing, using the native HivePress moderation flow. Suggested value: 21, so any contact detail or any duplicate triggers review, but a single website mention alone does not. Leave empty to disable scoring. There is deliberately no auto-delete tier: a human always makes the final call.', 'automated-listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Risk Threshold', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Enables risk scoring. Signals set to "Add to risk score" accumulate points: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. If the total reaches this threshold, the listing is accepted but held as Pending for your review instead of publishing, using the native HivePress moderation flow. Suggested value: 21, so any contact detail or any duplicate triggers review, but a single website mention alone does not. Leave empty to disable scoring. There is deliberately no auto-delete tier: a human always makes the final call.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'number',
 					'min_value'   => 1,
 					'_order'      => 110,
@@ -303,8 +303,8 @@ function hpalm_register_settings( $settings ) {
 		// in either load order.
 		if ( ! isset( $settings['integrations']['sections']['openai']['fields']['openai_api_key'] ) ) {
 			$settings['integrations']['sections']['openai']['fields']['openai_api_key'] = [
-				'label'       => esc_html__( 'API Key', 'automated-listing-moderation-for-hivepress' ),
-				'description' => __( 'Your OpenAI API key, shared by any installed extension that uses OpenAI\'s free Moderation endpoint. Moderation calls are free, but an OpenAI API account is required to obtain a key.', 'automated-listing-moderation-for-hivepress' ),
+				'label'       => esc_html__( 'API Key', 'listing-moderation-for-hivepress' ),
+				'description' => __( 'Your OpenAI API key, shared by any installed extension that uses OpenAI\'s free Moderation endpoint. Moderation calls are free, but an OpenAI API account is required to obtain a key.', 'listing-moderation-for-hivepress' ),
 				'type'        => 'text',
 				'max_length'  => 256,
 				'_order'      => 10,
@@ -1030,7 +1030,7 @@ function hpalm_check_velocity( $listing, $listing_id ) {
 	);
 
 	if ( is_array( $recent ) && count( $recent ) >= $limit ) {
-		return esc_html__( 'You have reached the maximum number of listings that can be submitted within 24 hours. Please try again later.', 'automated-listing-moderation-for-hivepress' );
+		return esc_html__( 'You have reached the maximum number of listings that can be submitted within 24 hours. Please try again later.', 'listing-moderation-for-hivepress' );
 	}
 
 	return null;
@@ -1283,7 +1283,7 @@ function hpalm_validate_listing_form( $errors, $form ) {
 			continue;
 		}
 
-		$label = $field->get_label( esc_html__( 'a listing field', 'automated-listing-moderation-for-hivepress' ) );
+		$label = $field->get_label( esc_html__( 'a listing field', 'listing-moderation-for-hivepress' ) );
 
 		$entries[] = [
 			'label' => $label,
@@ -1303,11 +1303,11 @@ function hpalm_validate_listing_form( $errors, $form ) {
 
 	$detector_messages = [
 		/* translators: 1: the detected text, 2: the field label (e.g. Description). */
-		'phone' => esc_html__( 'Phone numbers are not allowed in listings ("%1$s" found in %2$s). Please remove it to continue.', 'automated-listing-moderation-for-hivepress' ),
+		'phone' => esc_html__( 'Phone numbers are not allowed in listings ("%1$s" found in %2$s). Please remove it to continue.', 'listing-moderation-for-hivepress' ),
 		/* translators: 1: the detected text, 2: the field label (e.g. Description). */
-		'email' => esc_html__( 'Email addresses are not allowed in listings ("%1$s" found in %2$s). Please remove it to continue.', 'automated-listing-moderation-for-hivepress' ),
+		'email' => esc_html__( 'Email addresses are not allowed in listings ("%1$s" found in %2$s). Please remove it to continue.', 'listing-moderation-for-hivepress' ),
 		/* translators: 1: the detected text, 2: the field label (e.g. Description). */
-		'url'   => esc_html__( 'Website addresses are not allowed in listings ("%1$s" found in %2$s). Please remove it to continue.', 'automated-listing-moderation-for-hivepress' ),
+		'url'   => esc_html__( 'Website addresses are not allowed in listings ("%1$s" found in %2$s). Please remove it to continue.', 'listing-moderation-for-hivepress' ),
 	];
 
 	// ---- Phase 1: blocking checks. ----
@@ -1320,7 +1320,7 @@ function hpalm_validate_listing_form( $errors, $form ) {
 		if ( null !== $found ) {
 			$errors[] = sprintf(
 				/* translators: 1: the blocked word or phrase, 2: the field label (e.g. Description). */
-				esc_html__( '"%1$s" is a blocked word or phrase (found in %2$s). To continue with submitting your listing, please remove or update it.', 'automated-listing-moderation-for-hivepress' ),
+				esc_html__( '"%1$s" is a blocked word or phrase (found in %2$s). To continue with submitting your listing, please remove or update it.', 'listing-moderation-for-hivepress' ),
 				esc_html( $found ),
 				esc_html( $entry['label'] )
 			);
@@ -1378,8 +1378,8 @@ function hpalm_validate_listing_form( $errors, $form ) {
 
 	// Duplicates (once per submission, against submitted values).
 	$dup_checks = [
-		'dup_title' => [ $title, '_hpalm_title_hash', esc_html__( 'A listing with this exact title already exists. Please choose a different title.', 'automated-listing-moderation-for-hivepress' ) ],
-		'dup_desc'  => [ $description, '_hpalm_desc_hash', esc_html__( 'A listing with this exact description already exists. Please write a unique description.', 'automated-listing-moderation-for-hivepress' ) ],
+		'dup_title' => [ $title, '_hpalm_title_hash', esc_html__( 'A listing with this exact title already exists. Please choose a different title.', 'listing-moderation-for-hivepress' ) ],
+		'dup_desc'  => [ $description, '_hpalm_desc_hash', esc_html__( 'A listing with this exact description already exists. Please write a unique description.', 'listing-moderation-for-hivepress' ) ],
 	];
 
 	foreach ( $dup_checks as $type => $check ) {
@@ -1403,7 +1403,7 @@ function hpalm_validate_listing_form( $errors, $form ) {
 
 		if ( true === hpalm_ai_flagged( implode( "\n\n", $texts ) ) ) {
 			if ( 'block' === $modes['ai'] ) {
-				$errors[] = esc_html__( 'Your listing appears to contain content that violates our content guidelines. Please revise it and try again.', 'automated-listing-moderation-for-hivepress' );
+				$errors[] = esc_html__( 'Your listing appears to contain content that violates our content guidelines. Please revise it and try again.', 'listing-moderation-for-hivepress' );
 			} else {
 				$signals['ai'] = true;
 			}
@@ -1417,7 +1417,7 @@ function hpalm_validate_listing_form( $errors, $form ) {
 
 		if ( $image_urls && true === hpalm_ai_flags_images( $image_urls ) ) {
 			if ( 'block' === $modes['ai_image'] ) {
-				$errors[] = esc_html__( 'One or more of your listing photos appears to contain inappropriate content. Please replace it and try again.', 'automated-listing-moderation-for-hivepress' );
+				$errors[] = esc_html__( 'One or more of your listing photos appears to contain inappropriate content. Please replace it and try again.', 'listing-moderation-for-hivepress' );
 			} else {
 				$signals['ai_image'] = true;
 			}
@@ -1493,14 +1493,14 @@ add_filter( 'hivepress/v1/forms/listing_update/errors', 'hpalm_validate_listing_
  */
 function hpalm_get_signal_labels() {
 	return [
-		'phone'     => esc_html__( 'Phone number detected', 'automated-listing-moderation-for-hivepress' ),
-		'email'     => esc_html__( 'Email address detected', 'automated-listing-moderation-for-hivepress' ),
-		'url'       => esc_html__( 'Website address detected', 'automated-listing-moderation-for-hivepress' ),
-		'caps'      => esc_html__( 'Excessive capital letters', 'automated-listing-moderation-for-hivepress' ),
-		'dup_title' => esc_html__( 'Duplicate title', 'automated-listing-moderation-for-hivepress' ),
-		'dup_desc'  => esc_html__( 'Duplicate description', 'automated-listing-moderation-for-hivepress' ),
-		'ai'        => esc_html__( 'AI flagged the listing text', 'automated-listing-moderation-for-hivepress' ),
-		'ai_image'  => esc_html__( 'AI flagged a listing photo', 'automated-listing-moderation-for-hivepress' ),
+		'phone'     => esc_html__( 'Phone number detected', 'listing-moderation-for-hivepress' ),
+		'email'     => esc_html__( 'Email address detected', 'listing-moderation-for-hivepress' ),
+		'url'       => esc_html__( 'Website address detected', 'listing-moderation-for-hivepress' ),
+		'caps'      => esc_html__( 'Excessive capital letters', 'listing-moderation-for-hivepress' ),
+		'dup_title' => esc_html__( 'Duplicate title', 'listing-moderation-for-hivepress' ),
+		'dup_desc'  => esc_html__( 'Duplicate description', 'listing-moderation-for-hivepress' ),
+		'ai'        => esc_html__( 'AI flagged the listing text', 'listing-moderation-for-hivepress' ),
+		'ai_image'  => esc_html__( 'AI flagged a listing photo', 'listing-moderation-for-hivepress' ),
 	];
 }
 
@@ -1520,7 +1520,7 @@ function hpalm_add_admin_columns( $columns ) {
 		return $columns;
 	}
 
-	$label   = esc_html__( 'Moderation', 'automated-listing-moderation-for-hivepress' );
+	$label   = esc_html__( 'Moderation', 'listing-moderation-for-hivepress' );
 	$updated = [];
 
 	foreach ( $columns as $key => $value ) {
@@ -1560,7 +1560,7 @@ function hpalm_render_admin_columns( $column, $listing_id ) {
 	echo esc_html( number_format_i18n( hpalm_absint( $score ) ) );
 
 	if ( get_post_meta( $listing_id, '_hpalm_flagged', true ) ) {
-		echo ' <span style="color:#b32d2e;font-weight:600;">' . esc_html__( '(held)', 'automated-listing-moderation-for-hivepress' ) . '</span>';
+		echo ' <span style="color:#b32d2e;font-weight:600;">' . esc_html__( '(held)', 'listing-moderation-for-hivepress' ) . '</span>';
 	}
 }
 
@@ -1618,7 +1618,7 @@ function hpalm_sort_by_score( $query ) {
 function hpalm_register_meta_box() {
 	add_meta_box(
 		'hpalm_moderation',
-		esc_html__( 'Moderation', 'automated-listing-moderation-for-hivepress' ),
+		esc_html__( 'Moderation', 'listing-moderation-for-hivepress' ),
 		'hpalm_render_meta_box',
 		'hp_listing',
 		'side'
@@ -1637,7 +1637,7 @@ function hpalm_render_meta_box( $post ) {
 	$score      = $listing_id ? get_post_meta( $listing_id, '_hpalm_score', true ) : '';
 
 	if ( '' === $score || false === $score ) {
-		echo '<p>' . esc_html__( 'No risk signals were recorded for the current content of this listing.', 'automated-listing-moderation-for-hivepress' ) . '</p>';
+		echo '<p>' . esc_html__( 'No risk signals were recorded for the current content of this listing.', 'listing-moderation-for-hivepress' ) . '</p>';
 
 		return;
 	}
@@ -1649,14 +1649,14 @@ function hpalm_render_meta_box( $post ) {
 	echo '<p><strong>' . esc_html(
 		sprintf(
 			/* translators: 1: the risk score, 2: the risk threshold. */
-			__( 'Risk score: %1$s of %2$s', 'automated-listing-moderation-for-hivepress' ),
+			__( 'Risk score: %1$s of %2$s', 'listing-moderation-for-hivepress' ),
 			number_format_i18n( hpalm_absint( $score ) ),
 			number_format_i18n( $threshold )
 		)
 	) . '</strong></p>';
 
 	if ( get_post_meta( $listing_id, '_hpalm_flagged', true ) ) {
-		echo '<p style="color:#b32d2e;">' . esc_html__( 'This listing is currently held for review.', 'automated-listing-moderation-for-hivepress' ) . '</p>';
+		echo '<p style="color:#b32d2e;">' . esc_html__( 'This listing is currently held for review.', 'listing-moderation-for-hivepress' ) . '</p>';
 	}
 
 	if ( is_array( $signals ) && $signals ) {
@@ -1782,17 +1782,17 @@ function hpalm_render_import_button() {
 
 		btn.type      = 'button';
 		btn.className = 'button';
-		btn.textContent = <?php echo wp_json_encode( esc_html__( 'Import starter blocklist', 'automated-listing-moderation-for-hivepress' ) ); ?>;
-		btn.title       = <?php echo wp_json_encode( esc_html__( 'Adds common profanity to Blocked Keywords, plus whole-word patterns for terms that appear inside innocent words. Duplicates are skipped. Review the lists, then click Save Changes.', 'automated-listing-moderation-for-hivepress' ) ); ?>;
+		btn.textContent = <?php echo wp_json_encode( esc_html__( 'Import starter blocklist', 'listing-moderation-for-hivepress' ) ); ?>;
+		btn.title       = <?php echo wp_json_encode( esc_html__( 'Adds common profanity to Blocked Keywords, plus whole-word patterns for terms that appear inside innocent words. Duplicates are skipped. Review the lists, then click Save Changes.', 'listing-moderation-for-hivepress' ) ); ?>;
 
 		var note = document.createElement( 'span' );
 		note.style.cssText  = 'margin-left:8px;color:#666;';
-		note.textContent    = <?php echo wp_json_encode( esc_html__( 'Fills both fields above. Remember to save.', 'automated-listing-moderation-for-hivepress' ) ); ?>;
+		note.textContent    = <?php echo wp_json_encode( esc_html__( 'Fills both fields above. Remember to save.', 'listing-moderation-for-hivepress' ) ); ?>;
 
 		btn.addEventListener( 'click', function() {
 			mergeInto( kw, words, true );
 			mergeInto( pt, patterns, false );
-			note.textContent = <?php echo wp_json_encode( esc_html__( 'Starter list added. Review the fields, then click Save Changes.', 'automated-listing-moderation-for-hivepress' ) ); ?>;
+			note.textContent = <?php echo wp_json_encode( esc_html__( 'Starter list added. Review the fields, then click Save Changes.', 'listing-moderation-for-hivepress' ) ); ?>;
 		} );
 
 		wrap.appendChild( btn );
@@ -1814,7 +1814,7 @@ add_action( 'admin_footer', 'hpalm_render_import_button' );
  * be loaded no earlier than that.
  */
 function hpalm_load_textdomain() {
-	load_plugin_textdomain( 'automated-listing-moderation-for-hivepress', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	load_plugin_textdomain( 'listing-moderation-for-hivepress', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 }
 add_action( 'init', 'hpalm_load_textdomain' );
 
@@ -1825,7 +1825,7 @@ function hpalm_admin_notice() {
 	if ( ! class_exists( '\HivePress\Core' ) && current_user_can( 'activate_plugins' ) ) {
 		printf(
 			'<div class="notice notice-warning"><p>%s</p></div>',
-			esc_html__( 'Automated Listing Moderation for HivePress requires the HivePress plugin to be installed and activated.', 'automated-listing-moderation-for-hivepress' )
+			esc_html__( 'Automated Listing Moderation for HivePress requires the HivePress plugin to be installed and activated.', 'listing-moderation-for-hivepress' )
 		);
 	}
 }

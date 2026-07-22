@@ -9,272 +9,272 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-22 21:44+0000\n"
+"POT-Creation-Date: 2026-07-22 21:53+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Domain: automated-listing-moderation-for-hivepress\n"
+"X-Domain: listing-moderation-for-hivepress\n"
 
-#: automated-listing-moderation-for-hivepress.php:1033
+#: listing-moderation-for-hivepress.php:1033
 msgid "You have reached the maximum number of listings that can be submitted within 24 hours. Please try again later."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1286
+#: listing-moderation-for-hivepress.php:1286
 msgid "a listing field"
 msgstr ""
 
 #. translators: 1: the detected text, 2: the field label (e.g. Description).
-#: automated-listing-moderation-for-hivepress.php:1306
+#: listing-moderation-for-hivepress.php:1306
 msgid "Phone numbers are not allowed in listings (\"%1$s\" found in %2$s). Please remove it to continue."
 msgstr ""
 
 #. translators: 1: the detected text, 2: the field label (e.g. Description).
-#: automated-listing-moderation-for-hivepress.php:1308
+#: listing-moderation-for-hivepress.php:1308
 msgid "Email addresses are not allowed in listings (\"%1$s\" found in %2$s). Please remove it to continue."
 msgstr ""
 
 #. translators: 1: the detected text, 2: the field label (e.g. Description).
-#: automated-listing-moderation-for-hivepress.php:1310
+#: listing-moderation-for-hivepress.php:1310
 msgid "Website addresses are not allowed in listings (\"%1$s\" found in %2$s). Please remove it to continue."
 msgstr ""
 
 #. translators: 1: the blocked word or phrase, 2: the field label (e.g. Description).
-#: automated-listing-moderation-for-hivepress.php:1323
+#: listing-moderation-for-hivepress.php:1323
 msgid "\"%1$s\" is a blocked word or phrase (found in %2$s). To continue with submitting your listing, please remove or update it."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:138
+#: listing-moderation-for-hivepress.php:138
 msgid "Block submission"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1381
+#: listing-moderation-for-hivepress.php:1381
 msgid "A listing with this exact title already exists. Please choose a different title."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1382
+#: listing-moderation-for-hivepress.php:1382
 msgid "A listing with this exact description already exists. Please write a unique description."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:139
+#: listing-moderation-for-hivepress.php:139
 msgid "Add to risk score"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1406
+#: listing-moderation-for-hivepress.php:1406
 msgid "Your listing appears to contain content that violates our content guidelines. Please revise it and try again."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1420
+#: listing-moderation-for-hivepress.php:1420
 msgid "One or more of your listing photos appears to contain inappropriate content. Please replace it and try again."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1496
+#: listing-moderation-for-hivepress.php:1496
 msgid "Phone number detected"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1497
+#: listing-moderation-for-hivepress.php:1497
 msgid "Email address detected"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1498
+#: listing-moderation-for-hivepress.php:1498
 msgid "Website address detected"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1499
+#: listing-moderation-for-hivepress.php:1499
 msgid "Excessive capital letters"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1500
+#: listing-moderation-for-hivepress.php:1500
 msgid "Duplicate title"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1501
+#: listing-moderation-for-hivepress.php:1501
 msgid "Duplicate description"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1502
+#: listing-moderation-for-hivepress.php:1502
 msgid "AI flagged the listing text"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1503
+#: listing-moderation-for-hivepress.php:1503
 msgid "AI flagged a listing photo"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1523 automated-listing-moderation-for-hivepress.php:1621
+#: listing-moderation-for-hivepress.php:1523 listing-moderation-for-hivepress.php:1621
 msgid "Moderation"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1563
+#: listing-moderation-for-hivepress.php:1563
 msgid "(held)"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:158
+#: listing-moderation-for-hivepress.php:158
 msgid "Automated Moderation"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:163
+#: listing-moderation-for-hivepress.php:163
 msgid "Verified Vendors"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:164
+#: listing-moderation-for-hivepress.php:164
 msgid "Skip checks for verified vendors"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1640
+#: listing-moderation-for-hivepress.php:1640
 msgid "No risk signals were recorded for the current content of this listing."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:165
+#: listing-moderation-for-hivepress.php:165
 msgid "Skip every moderation check for listings from vendors marked as verified. Vendors can be verified by ticking the Verified checkbox on their profile in the WordPress dashboard."
 msgstr ""
 
 #. translators: 1: the risk score, 2: the risk threshold.
-#: automated-listing-moderation-for-hivepress.php:1652
+#: listing-moderation-for-hivepress.php:1652
 msgid "Risk score: %1$s of %2$s"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1659
+#: listing-moderation-for-hivepress.php:1659
 msgid "This listing is currently held for review."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:171
+#: listing-moderation-for-hivepress.php:171
 msgid "Submission Limit"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:172
+#: listing-moderation-for-hivepress.php:172
 msgid "The maximum number of listings each vendor can submit within 24 hours. Editing an existing listing does not count towards the limit. Leave empty to disable."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1785
+#: listing-moderation-for-hivepress.php:1785
 msgid "Import starter blocklist"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1786
+#: listing-moderation-for-hivepress.php:1786
 msgid "Adds common profanity to Blocked Keywords, plus whole-word patterns for terms that appear inside innocent words. Duplicates are skipped. Review the lists, then click Save Changes."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:179
+#: listing-moderation-for-hivepress.php:179
 msgid "Blocked Keywords"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1790
+#: listing-moderation-for-hivepress.php:1790
 msgid "Fills both fields above. Remember to save."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1795
+#: listing-moderation-for-hivepress.php:1795
 msgid "Starter list added. Review the fields, then click Save Changes."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:180
+#: listing-moderation-for-hivepress.php:180
 msgid "Words or phrases that block a listing from being submitted. Separate with commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>. For whole-word matching, use Blocked Patterns with <code>\\b</code> boundaries instead. The button below imports a starter list of common profanity."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:1828
+#: listing-moderation-for-hivepress.php:1828
 msgid "Automated Listing Moderation for HivePress requires the HivePress plugin to be installed and activated."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:188
+#: listing-moderation-for-hivepress.php:188
 msgid "Blocked Patterns"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:189
+#: listing-moderation-for-hivepress.php:189
 msgid "Advanced: regular expressions, <strong>one per line only</strong>. Commas are regex syntax, so they do not separate patterns here. No delimiters, case-insensitive. Examples: <code>\\bclass\\b</code> blocks the whole word only, not \"classic\". <code>\\bcash\\s*only\\b</code> blocks \"cash only\" with any spacing. <code>colou?r</code> blocks both spellings. Escape a literal ~ as <code>\\~</code>. Invalid patterns are skipped. Note: WordPress strips angle brackets on save, so assertions containing &lt; cannot be used."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:197
+#: listing-moderation-for-hivepress.php:197
 msgid "Catch Character Evasion"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:198
+#: listing-moderation-for-hivepress.php:198
 msgid "Also match accented and leet-speak look-alikes of blocked words"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:199
+#: listing-moderation-for-hivepress.php:199
 msgid "Re-checks keywords and patterns against copies of the text with accents removed, invisible characters stripped and common leet substitutions reversed, so blocking <code>fuck</code> also catches <code>fùck</code> and zero-width-character tricks, and blocking <code>shit</code> also catches <code>sh1t</code> and <code>$hit</code>. Substitutions are reversed to their look-alike letter (0 becomes o, 1 becomes i or l, $ becomes s), so a substitution that changes the word (like <code>f0ck</code>) needs its own keyword or pattern. Legitimate accented text (e.g. \"café\", French names) is NOT blocked by this option; it only widens what your existing keywords match."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:205
+#: listing-moderation-for-hivepress.php:205
 msgid "Phone Numbers"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:206
+#: listing-moderation-for-hivepress.php:206
 msgid "Detects sequences of 9 to 14 digits, optionally separated by spaces, dashes or brackets, with an optional leading +, e.g. <code>07123 456789</code> or <code>+44 7911 123456</code>. Prices, years and dates are not affected. Sharing phone numbers is often an attempt to move bookings off-platform."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:207 automated-listing-moderation-for-hivepress.php:216 automated-listing-moderation-for-hivepress.php:225 automated-listing-moderation-for-hivepress.php:234 automated-listing-moderation-for-hivepress.php:243 automated-listing-moderation-for-hivepress.php:252 automated-listing-moderation-for-hivepress.php:263
+#: listing-moderation-for-hivepress.php:207 listing-moderation-for-hivepress.php:216 listing-moderation-for-hivepress.php:225 listing-moderation-for-hivepress.php:234 listing-moderation-for-hivepress.php:243 listing-moderation-for-hivepress.php:252 listing-moderation-for-hivepress.php:263
 msgid "Disabled"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:214
+#: listing-moderation-for-hivepress.php:214
 msgid "Email Addresses"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:215
+#: listing-moderation-for-hivepress.php:215
 msgid "Detects anything shaped like an email address, e.g. <code>name@example.com</code>. Obfuscated forms (\"name at gmail dot com\") are not detected; add a Blocked Pattern for those if needed."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:223
+#: listing-moderation-for-hivepress.php:223
 msgid "Website Addresses"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:224
+#: listing-moderation-for-hivepress.php:224
 msgid "Detects links starting with http, https or www, plus bare domains ending in a common extension such as <code>example.com</code> or <code>example.co.uk</code>. Note this also applies to your own site address if vendors mention it."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:232
+#: listing-moderation-for-hivepress.php:232
 msgid "Duplicate Titles"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:233
+#: listing-moderation-for-hivepress.php:233
 msgid "Detects when another live or pending listing already has the same title (ignoring case and extra spaces). Compares a precomputed fingerprint of each listing rather than scanning listing content, so it costs one extra database query per submission. Existing listings are fingerprinted automatically in the background after you enable this."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:241
+#: listing-moderation-for-hivepress.php:241
 msgid "Duplicate Descriptions"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:242
+#: listing-moderation-for-hivepress.php:242
 msgid "Detects when another live or pending listing already has an identical description (ignoring case, formatting and extra spaces). Like duplicate titles, this compares stored fingerprints rather than scanning content. Near-duplicates with small wording changes are not detected."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:250
+#: listing-moderation-for-hivepress.php:250
 msgid "AI Text Review (OpenAI)"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:251
+#: listing-moderation-for-hivepress.php:251
 msgid "Sends the listing text to OpenAI's free Moderation endpoint (model omni-moderation-latest), which flags hate, harassment, violence, self-harm and sexual content. Requires an OpenAI API key, entered on the Integrations tab. Listing text is sent to OpenAI's servers; disclose this in your privacy policy. If the API is unreachable, submissions proceed unchecked rather than failing."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:259
+#: listing-moderation-for-hivepress.php:259
 msgid "AI Photo Review (OpenAI)"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:260
+#: listing-moderation-for-hivepress.php:260
 msgid "Check listing photos with the free OpenAI moderation endpoint. All photos are reviewed in a single request. Requires an OpenAI API key on the Integrations tab, and the site must be publicly reachable so OpenAI can fetch the photos. If the service is unavailable the submission proceeds unchecked."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:268
+#: listing-moderation-for-hivepress.php:268
 msgid "Excessive Capitals"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:269
+#: listing-moderation-for-hivepress.php:269
 msgid "Add shouty text to the risk score"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:270
+#: listing-moderation-for-hivepress.php:270
 msgid "Adds risk points when a field is written mostly in capitals (70% or more of at least 12 letters), e.g. \"BUY NOW CHEAP!!!\". This is a risk signal only, never an outright block, and only counts when a Risk Threshold is set below."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:276
+#: listing-moderation-for-hivepress.php:276
 msgid "Risk Threshold"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:277
+#: listing-moderation-for-hivepress.php:277
 msgid "Enables risk scoring. Signals set to \"Add to risk score\" accumulate points: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. If the total reaches this threshold, the listing is accepted but held as Pending for your review instead of publishing, using the native HivePress moderation flow. Suggested value: 21, so any contact detail or any duplicate triggers review, but a single website mention alone does not. Leave empty to disable scoring. There is deliberately no auto-delete tier: a human always makes the final call."
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:306
+#: listing-moderation-for-hivepress.php:306
 msgid "API Key"
 msgstr ""
 
-#: automated-listing-moderation-for-hivepress.php:307
+#: listing-moderation-for-hivepress.php:307
 msgid "Your OpenAI API key, shared by any installed extension that uses OpenAI's free Moderation endpoint. Moderation calls are free, but an OpenAI API account is required to obtain a key."
 msgstr ""
 
