@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.3.4
+ * Version:     1.4.0
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -1829,3 +1829,66 @@ function hpalm_admin_notice() {
 	}
 }
 add_action( 'admin_notices', 'hpalm_admin_notice' );
+
+/*
+ * -------------------------------------------------------------------------
+ * GitHub updates.
+ * -------------------------------------------------------------------------
+ */
+
+/**
+ * Wires up the bundled Plugin Update Checker so sites receive update
+ * notifications and one-click updates straight from this plugin's GitHub
+ * releases, on the normal Dashboard → Updates and Plugins screens.
+ *
+ * How it works: the checker reads the latest GitHub release. When that
+ * release's tag (e.g. 1.3.5 or v1.3.5) is newer than the Version header
+ * above, WordPress shows an update. It installs the release asset named
+ * listing-moderation-for-hivepress.zip, which is the clean build produced by
+ * bin/build.php whose internal folder matches this plugin's slug, so updates
+ * land in the right folder with no "destination folder already exists"
+ * mismatch. GitHub's own auto-generated source zip is deliberately NOT used.
+ *
+ * The GitHub repository and its releases must be public for sites to reach
+ * the update metadata and download the asset.
+ *
+ * Hooked to init so the ~40-file library only loads inside a real request
+ * (never, for example, under the standalone test harness), and registers
+ * before WordPress evaluates the plugin-update transient later in the
+ * request. Guarded twice so a missing or partial library can never fatal the
+ * plugin: updates simply stop working until it is restored.
+ */
+function hpalm_setup_update_checker() {
+	$loader = plugin_dir_path( __FILE__ ) . 'plugin-update-checker/plugin-update-checker.php';
+
+	if ( ! is_readable( $loader ) ) {
+		return;
+	}
+
+	require_once $loader;
+
+	if ( ! class_exists( '\YahnisElsts\PluginUpdateChecker\v5\PucFactory' ) ) {
+		return;
+	}
+
+	$checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+		'https://github.com/irapidchris-del/listing-moderation-for-hivepress/',
+		__FILE__,
+		'listing-moderation-for-hivepress'
+	);
+
+	// Read release metadata (and the readme.txt shown in "View details") from
+	// the default branch.
+	if ( method_exists( $checker, 'setBranch' ) ) {
+		$checker->setBranch( 'main' );
+	}
+
+	// Install the attached release asset (the clean, correctly-foldered zip)
+	// rather than GitHub's auto-generated source archive.
+	$api = $checker->getVcsApi();
+
+	if ( is_object( $api ) && method_exists( $api, 'enableReleaseAssets' ) ) {
+		$api->enableReleaseAssets( '/^listing-moderation-for-hivepress\.zip$/' );
+	}
+}
+add_action( 'init', 'hpalm_setup_update_checker' );

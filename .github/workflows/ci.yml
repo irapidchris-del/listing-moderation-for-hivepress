@@ -30,10 +30,13 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
 
-      - name: Lint all PHP files
+      - name: Lint plugin PHP files
         run: |
-          find . -type f -name '*.php' -not -path './vendor/*' -print0 \
-            | xargs -0 -n1 -P4 php -l
+          find . -type f -name '*.php' \
+            -not -path './vendor/*' \
+            -not -path './plugin-update-checker/*' \
+            -not -path './dist/*' \
+            -print0 | xargs -0 -n1 -P4 php -l
 
   phpcs:
     name: WordPress Coding Standards

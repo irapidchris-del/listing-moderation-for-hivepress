@@ -4,7 +4,7 @@ Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.3
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.4
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,6 +49,10 @@ There is deliberately **no auto-delete tier**: heuristics can false-positive, so
 
 If the OpenAI API is unreachable, times out, or errors, submissions proceed unchecked — a moderation outage never takes down listing submission.
 
+**Automatic updates**
+
+New versions are delivered straight from the plugin's GitHub releases. Update notifications, "Check for updates", and one-click updating all appear on the normal WordPress Plugins screen, just like a plugin installed from wordpress.org.
+
 == Installation ==
 
 1. Install and activate [HivePress](https://wordpress.org/plugins/hivepress/) (required).
@@ -83,6 +87,10 @@ WordPress strips angle brackets from settings textareas on save, so regex assert
 
 All plugin settings and hidden fingerprint/score meta are removed. The OpenAI API key is deliberately kept, because its option name is shared with other OpenAI integrations; clear the field on the Integrations tab before uninstalling if you want it gone.
 
+= How do updates work? =
+
+The plugin checks its GitHub releases for a newer version and shows updates on your Plugins screen, the same as any other plugin. No account or licence key is needed. Updates are delivered by the bundled Plugin Update Checker library.
+
 = Can I customise the risk weights? =
 
 Yes, via the `hpalm_risk_weights` filter:
@@ -96,8 +104,9 @@ Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicat
 
 == Changelog ==
 
-= 1.3.4 =
+= 1.4.0 =
 * First public release to the HivePress community.
+* Automatic updates delivered straight from GitHub releases (update notifications and one-click updating on the Plugins screen).
 * Blocked keywords, regex patterns and character-evasion catching.
 * Phone number, email address and website address detection, each blockable or scoreable.
 * Duplicate title and description detection via background-computed fingerprints.

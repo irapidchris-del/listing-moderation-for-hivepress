@@ -19,8 +19,9 @@
 		}
 	},
 	"scripts": {
-		"lint": "find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 -P4 php -l",
+		"lint": "find . -type f -name '*.php' -not -path './vendor/*' -not -path './plugin-update-checker/*' -not -path './dist/*' -print0 | xargs -0 -n1 -P4 php -l",
 		"phpcs": "phpcs",
-		"phpcbf": "phpcbf"
+		"phpcbf": "phpcbf",
+		"build": "php bin/build.php"
 	}
 }

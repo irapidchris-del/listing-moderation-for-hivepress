@@ -2,11 +2,15 @@
 <ruleset name="Listing Moderation for HivePress">
 	<description>Coding standards for the Automated Listing Moderation for HivePress plugin.</description>
 
-	<!-- Scan the plugin's own PHP; skip Composer and build artefacts. -->
+	<!-- Scan the plugin's own PHP; skip Composer, the bundled updater library,
+	     build tooling and build output. -->
 	<file>.</file>
 	<arg name="extensions" value="php"/>
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/plugin-update-checker/*</exclude-pattern>
+	<exclude-pattern>*/bin/*</exclude-pattern>
+	<exclude-pattern>*/dist/*</exclude-pattern>
 
 	<!-- Show sniff codes and a progress bar; use colours. -->
 	<arg value="ps"/>
