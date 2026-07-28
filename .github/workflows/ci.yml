@@ -34,7 +34,6 @@ jobs:
         run: |
           find . -type f -name '*.php' \
             -not -path './vendor/*' \
-            -not -path './plugin-update-checker/*' \
             -not -path './dist/*' \
             -print0 | xargs -0 -n1 -P4 php -l
 

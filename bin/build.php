@@ -53,7 +53,7 @@ if ( preg_match( '/^[ \t\/*]*Version:\s*(.+)$/mi', (string) file_get_contents( $
 
 // Allowlist of what ships inside the plugin folder.
 $ship_files = array( $slug . '.php', 'uninstall.php', 'readme.txt', 'LICENSE' );
-$ship_dirs  = array( 'languages', 'plugin-update-checker' );
+$ship_dirs  = array( 'languages' );
 
 // Resolve the concrete file list (relative to the repo root).
 $entries = array();

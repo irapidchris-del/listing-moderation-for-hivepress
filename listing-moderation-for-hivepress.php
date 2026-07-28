@@ -9,10 +9,11 @@
  * License:     GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: listing-moderation-for-hivepress
- * Requires at least: 5.3
+ * Domain Path: /languages
+ * Requires at least: 5.8
  * Requires PHP: 7.4
  * Requires Plugins: hivepress
- * Update URI:  false
+ * Update URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  *
  * @package Automated_Listing_Moderation_For_HivePress
  *
@@ -1832,63 +1833,321 @@ add_action( 'admin_notices', 'hpalm_admin_notice' );
 
 /*
  * -------------------------------------------------------------------------
- * GitHub updates.
+ * Updates.
+ *
+ * The plugin is distributed via GitHub releases rather than wordpress.org,
+ * so update checks go through the native `update_plugins_{$hostname}` API
+ * introduced in WordPress 5.8, keyed off the Update URI header above. The
+ * update package is the release asset named `*.zip`, which must contain a
+ * single `listing-moderation-for-hivepress` directory. No third-party
+ * library is used, and every network call fails open.
  * -------------------------------------------------------------------------
  */
 
+const HPALM_UPDATE_REPO      = 'irapidchris-del/listing-moderation-for-hivepress';
+const HPALM_UPDATE_SLUG      = 'listing-moderation-for-hivepress';
+const HPALM_UPDATE_CACHE_KEY = 'hpalm_github_release';
+
 /**
- * Wires up the bundled Plugin Update Checker so sites receive update
- * notifications and one-click updates straight from this plugin's GitHub
- * releases, on the normal Dashboard → Updates and Plugins screens.
+ * Gets the installed plugin version from the header.
  *
- * How it works: the checker reads the latest GitHub release. When that
- * release's tag (e.g. 1.3.5 or v1.3.5) is newer than the Version header
- * above, WordPress shows an update. It installs the release asset named
- * listing-moderation-for-hivepress.zip, which is the clean build produced by
- * bin/build.php whose internal folder matches this plugin's slug, so updates
- * land in the right folder with no "destination folder already exists"
- * mismatch. GitHub's own auto-generated source zip is deliberately NOT used.
- *
- * The GitHub repository and its releases must be public for sites to reach
- * the update metadata and download the asset.
- *
- * Hooked to init so the ~40-file library only loads inside a real request
- * (never, for example, under the standalone test harness), and registers
- * before WordPress evaluates the plugin-update transient later in the
- * request. Guarded twice so a missing or partial library can never fatal the
- * plugin: updates simply stop working until it is restored.
+ * @return string
  */
-function hpalm_setup_update_checker() {
-	$loader = plugin_dir_path( __FILE__ ) . 'plugin-update-checker/plugin-update-checker.php';
+function hpalm_get_version() {
+	static $version = null;
 
-	if ( ! is_readable( $loader ) ) {
-		return;
+	if ( null === $version ) {
+		$data    = get_file_data( __FILE__, [ 'Version' => 'Version' ] );
+		$version = $data['Version'];
 	}
 
-	require_once $loader;
+	return $version;
+}
 
-	if ( ! class_exists( '\YahnisElsts\PluginUpdateChecker\v5\PucFactory' ) ) {
-		return;
+/**
+ * Gets the latest GitHub release details, cached in a site transient.
+ *
+ * Successes are cached for 6 hours; failures for 1 hour, so an outage or
+ * rate-limit never turns into a request-per-pageload storm.
+ *
+ * @param bool $force Bypass the cache.
+ * @return array<string, string>|null
+ */
+function hpalm_get_latest_release( $force = false ) {
+	$release = $force ? false : get_site_transient( HPALM_UPDATE_CACHE_KEY );
+
+	if ( ! is_array( $release ) ) {
+		$release = hpalm_fetch_latest_release();
+
+		set_site_transient( HPALM_UPDATE_CACHE_KEY, $release, $release ? 6 * HOUR_IN_SECONDS : HOUR_IN_SECONDS );
 	}
 
-	$checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-		'https://github.com/irapidchris-del/listing-moderation-for-hivepress/',
-		__FILE__,
-		'listing-moderation-for-hivepress'
+	return $release ? $release : null;
+}
+
+/**
+ * Fetches the latest release details from the GitHub API.
+ *
+ * Draft and pre-release entries are excluded by the endpoint itself, so
+ * publishing a pre-release never triggers an update notice. FAILS OPEN:
+ * returns an empty array on any error, which is treated as "no update".
+ *
+ * @return array<string, string>
+ */
+function hpalm_fetch_latest_release() {
+	$response = wp_remote_get(
+		'https://api.github.com/repos/' . HPALM_UPDATE_REPO . '/releases/latest',
+		[
+			'timeout' => 10,
+			'headers' => [ 'Accept' => 'application/vnd.github+json' ],
+		]
 	);
 
-	// Read release metadata (and the readme.txt shown in "View details") from
-	// the default branch.
-	if ( method_exists( $checker, 'setBranch' ) ) {
-		$checker->setBranch( 'main' );
+	if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+		return [];
 	}
 
-	// Install the attached release asset (the clean, correctly-foldered zip)
-	// rather than GitHub's auto-generated source archive.
-	$api = $checker->getVcsApi();
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
 
-	if ( is_object( $api ) && method_exists( $api, 'enableReleaseAssets' ) ) {
-		$api->enableReleaseAssets( '/^listing-moderation-for-hivepress\.zip$/' );
+	if ( ! is_array( $data ) ) {
+		return [];
 	}
+
+	// The version is read from the release tag, with or without a "v" prefix.
+	$version = ltrim( (string) ( isset( $data['tag_name'] ) ? $data['tag_name'] : '' ), 'vV' );
+
+	if ( ! $version ) {
+		return [];
+	}
+
+	// The update package is the first release asset named `*.zip`.
+	$package = '';
+
+	foreach ( (array) ( isset( $data['assets'] ) ? $data['assets'] : [] ) as $asset ) {
+		$name = strtolower( (string) ( isset( $asset['name'] ) ? $asset['name'] : '' ) );
+
+		if ( '.zip' === substr( $name, -4 ) && ! empty( $asset['browser_download_url'] ) ) {
+			$package = (string) $asset['browser_download_url'];
+
+			break;
+		}
+	}
+
+	if ( ! $package ) {
+		return [];
+	}
+
+	return [
+		'version'   => $version,
+		'package'   => $package,
+		'url'       => (string) ( isset( $data['html_url'] ) ? $data['html_url'] : 'https://github.com/' . HPALM_UPDATE_REPO ),
+		'notes'     => (string) ( isset( $data['body'] ) ? $data['body'] : '' ),
+		'published' => (string) ( isset( $data['published_at'] ) ? $data['published_at'] : '' ),
+	];
 }
-add_action( 'init', 'hpalm_setup_update_checker' );
+
+/**
+ * Provides the update details to the WordPress update system.
+ *
+ * WordPress matches the plugin to this filter via the Update URI header
+ * hostname and compares the versions itself, filing the result under either
+ * the available updates or the up-to-date list.
+ *
+ * @param array<string, mixed>|false $update Update data.
+ * @param array<string, string>      $plugin_data Plugin headers.
+ * @param string                     $plugin_file Plugin basename.
+ * @return array<string, mixed>|false
+ */
+function hpalm_check_for_update( $update, $plugin_data, $plugin_file ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- signature fixed by the WordPress hook.
+	if ( plugin_basename( __FILE__ ) !== $plugin_file ) {
+		return $update;
+	}
+
+	$release = hpalm_get_latest_release();
+
+	if ( ! $release ) {
+		return $update;
+	}
+
+	return [
+		'id'      => 'https://github.com/' . HPALM_UPDATE_REPO,
+		'slug'    => HPALM_UPDATE_SLUG,
+		'plugin'  => $plugin_file,
+		'version' => $release['version'],
+		'url'     => $release['url'],
+		'package' => $release['package'],
+	];
+}
+add_filter( 'update_plugins_github.com', 'hpalm_check_for_update', 10, 3 );
+
+/**
+ * Provides the plugin details for the "View version details" popup.
+ *
+ * Without this the details link on the Plugins screen would open an empty
+ * modal, since the plugin is not on wordpress.org. The release body is shown
+ * as the changelog, escaped.
+ *
+ * @param object|array|false $result Result object.
+ * @param string             $action API action.
+ * @param object             $args   API arguments.
+ * @return object|array|false
+ */
+function hpalm_get_plugin_information( $result, $action, $args ) {
+	if ( 'plugin_information' !== $action || ! is_object( $args ) || HPALM_UPDATE_SLUG !== ( isset( $args->slug ) ? $args->slug : '' ) ) {
+		return $result;
+	}
+
+	$release = hpalm_get_latest_release();
+
+	if ( ! $release ) {
+		return $result;
+	}
+
+	$plugin_data = get_file_data(
+		__FILE__,
+		[
+			'Name'        => 'Plugin Name',
+			'Description' => 'Description',
+			'Author'      => 'Author',
+			'AuthorURI'   => 'Author URI',
+			'RequiresWP'  => 'Requires at least',
+			'RequiresPHP' => 'Requires PHP',
+		]
+	);
+
+	return (object) [
+		'name'          => $plugin_data['Name'],
+		'slug'          => HPALM_UPDATE_SLUG,
+		'version'       => $release['version'],
+		'author'        => '<a href="' . esc_url( $plugin_data['AuthorURI'] ) . '">' . esc_html( $plugin_data['Author'] ) . '</a>',
+		'homepage'      => 'https://github.com/' . HPALM_UPDATE_REPO,
+		'requires'      => $plugin_data['RequiresWP'],
+		'requires_php'  => $plugin_data['RequiresPHP'],
+		'last_updated'  => $release['published'],
+		'download_link' => $release['package'],
+		'sections'      => [
+			'description' => wpautop( esc_html( $plugin_data['Description'] ) ),
+			'changelog'   => $release['notes'] ? wpautop( esc_html( $release['notes'] ) ) : '<p>' . esc_html__( 'See the GitHub releases page for the changelog.', 'listing-moderation-for-hivepress' ) . '</p>',
+		],
+	];
+}
+add_filter( 'plugins_api', 'hpalm_get_plugin_information', 10, 3 );
+
+/**
+ * Adds a "Check for updates" link to the plugin row.
+ *
+ * @param array<string> $links Plugin action links.
+ * @return array<string>
+ */
+function hpalm_add_update_check_link( $links ) {
+	if ( current_user_can( 'update_plugins' ) ) {
+		$links[] = '<a href="' . esc_url( wp_nonce_url( self_admin_url( 'plugins.php?hpalm_check_updates=1' ), 'hpalm_check_updates' ) ) . '">' . esc_html__( 'Check for updates', 'listing-moderation-for-hivepress' ) . '</a>';
+	}
+
+	return $links;
+}
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'hpalm_add_update_check_link' );
+add_filter( 'network_admin_plugin_action_links_' . plugin_basename( __FILE__ ), 'hpalm_add_update_check_link' );
+
+/**
+ * Handles the manual "Check for updates" click.
+ *
+ * Refreshes the cached release, re-runs the update check and redirects back
+ * to the Plugins screen with the result.
+ */
+function hpalm_handle_update_check() {
+	if ( ! isset( $_GET['hpalm_check_updates'] ) || ! current_user_can( 'update_plugins' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce is verified on the next line before anything happens.
+		return;
+	}
+
+	check_admin_referer( 'hpalm_check_updates' );
+
+	$release = hpalm_get_latest_release( true );
+
+	wp_clean_plugins_cache();
+	wp_update_plugins();
+
+	$status = 'none';
+
+	if ( ! $release ) {
+		$status = 'error';
+	} elseif ( version_compare( $release['version'], hpalm_get_version(), '>' ) ) {
+		$status = 'available';
+	}
+
+	wp_safe_redirect( add_query_arg( 'hpalm_checked', $status, self_admin_url( 'plugins.php' ) ) );
+
+	exit;
+}
+add_action( 'admin_init', 'hpalm_handle_update_check' );
+
+/**
+ * Shows the manual update-check result as an admin notice.
+ */
+function hpalm_show_update_check_notice() {
+	if ( ! isset( $_GET['hpalm_checked'] ) || ! current_user_can( 'update_plugins' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status flag set by our own post-check redirect; no action is taken on it.
+		return;
+	}
+
+	$status = sanitize_key( wp_unslash( $_GET['hpalm_checked'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
+
+	if ( 'available' === $status ) {
+		$release = hpalm_get_latest_release();
+
+		/* translators: %s: the new version number. */
+		$message = sprintf( esc_html__( 'A new version of Automated Listing Moderation for HivePress (%s) is available.', 'listing-moderation-for-hivepress' ), esc_html( $release ? $release['version'] : '' ) );
+		$class   = 'notice-success';
+	} elseif ( 'none' === $status ) {
+		$message = esc_html__( 'Automated Listing Moderation for HivePress is up to date.', 'listing-moderation-for-hivepress' );
+		$class   = 'notice-success';
+	} elseif ( 'error' === $status ) {
+		$message = esc_html__( 'Could not reach GitHub to check for updates. Please try again later.', 'listing-moderation-for-hivepress' );
+		$class   = 'notice-error';
+	} else {
+		return;
+	}
+
+	echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+}
+add_action( 'admin_notices', 'hpalm_show_update_check_notice' );
+add_action( 'network_admin_notices', 'hpalm_show_update_check_notice' );
+
+/**
+ * Keeps updates installing into the current plugin directory.
+ *
+ * The extracted release folder is renamed to match the directory the plugin
+ * is installed in, so an update can never land in a differently named folder
+ * even if the release zip is packaged unexpectedly.
+ *
+ * @param string               $source        Extracted update source.
+ * @param string               $remote_source Remote source directory.
+ * @param object               $upgrader      Upgrader instance.
+ * @param array<string, mixed> $hook_extra    Extra hook arguments.
+ * @return string|WP_Error
+ */
+function hpalm_fix_update_directory( $source, $remote_source, $upgrader, $hook_extra = [] ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- signature fixed by the WordPress hook.
+	global $wp_filesystem;
+
+	if ( plugin_basename( __FILE__ ) !== ( isset( $hook_extra['plugin'] ) ? $hook_extra['plugin'] : '' ) || ! $wp_filesystem ) {
+		return $source;
+	}
+
+	$directory = dirname( plugin_basename( __FILE__ ) );
+
+	if ( '.' === $directory ) {
+		return $source;
+	}
+
+	$target = trailingslashit( $remote_source ) . $directory . '/';
+
+	if ( trailingslashit( $source ) === $target ) {
+		return $source;
+	}
+
+	if ( ! $wp_filesystem->move( untrailingslashit( $source ), untrailingslashit( $target ) ) ) {
+		return new WP_Error( 'hpalm_rename_failed', esc_html__( 'Could not rename the update directory.', 'listing-moderation-for-hivepress' ) );
+	}
+
+	return $target;
+}
+add_filter( 'upgrader_source_selection', 'hpalm_fix_update_directory', 10, 4 );

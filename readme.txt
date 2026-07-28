@@ -1,7 +1,7 @@
 === Automated Listing Moderation for HivePress ===
 Contributors: chrisb
 Tags: hivepress, moderation, spam, listings, marketplace
-Requires at least: 5.3
+Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.4.0
@@ -89,7 +89,7 @@ All plugin settings and hidden fingerprint/score meta are removed. The OpenAI AP
 
 = How do updates work? =
 
-The plugin checks its GitHub releases for a newer version and shows updates on your Plugins screen, the same as any other plugin. No account or licence key is needed. Updates are delivered by the bundled Plugin Update Checker library.
+The plugin checks its GitHub releases for a newer version and shows updates on your Plugins screen, the same as any other plugin. No account or licence key is needed. This uses WordPress's native update API (the `Update URI` header), with no third-party library. A "Check for updates" link on the plugin row lets you check on demand.
 
 = Can I customise the risk weights? =
 
