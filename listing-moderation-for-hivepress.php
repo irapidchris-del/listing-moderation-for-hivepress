@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.6.4
+ * Version:     1.6.5
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -157,9 +157,21 @@ defined( 'ABSPATH' ) || exit;
  * @return array
  */
 function hpalm_get_mode_options() {
+	// A check set to "Add to risk score" does nothing whatsoever until a Risk
+	// Threshold is entered: hpalm_validate_listing_form blanks the mode when
+	// the threshold is under 1, deliberately, so a scoring check never spends
+	// a database query or an OpenAI call on a result that cannot be used. The
+	// option has to admit that rather than sit there looking switched on.
+	// Fields\Select validates against the option KEYS, so a stored 'score'
+	// survives this untouched, and settings configs are rebuilt per request
+	// so the label corrects itself the moment a threshold is saved.
+	$scoring = hpalm_absint( get_option( 'hp_alm_risk_threshold' ) ) >= 1;
+
 	return [
 		'block' => esc_html__( 'Block submission', 'listing-moderation-for-hivepress' ),
-		'score' => esc_html__( 'Add to risk score', 'listing-moderation-for-hivepress' ),
+		'score' => $scoring
+			? esc_html__( 'Add to risk score', 'listing-moderation-for-hivepress' )
+			: esc_html__( 'Add to risk score (set a Risk Threshold below first)', 'listing-moderation-for-hivepress' ),
 	];
 }
 
@@ -179,21 +191,21 @@ function hpalm_register_settings( $settings ) {
 
 		$settings['listings']['sections']['alm_moderation'] = [
 			'title'       => esc_html__( 'Automated Moderation', 'listing-moderation-for-hivepress' ),
-			'description' => esc_html__( 'Automatically checks listings when they are submitted or edited on the site, and either refuses them or holds them for your review. Changes made in the WordPress dashboard are not checked. Detectors set to "Add to risk score" only take effect once a Risk Threshold is entered below. Added by the Automated Listing Moderation extension.', 'listing-moderation-for-hivepress' ),
+			'description' => esc_html__( 'Checks each listing as it is submitted or edited on your site, and either refuses it or holds it for you to approve. Listings edited in the WordPress dashboard are never checked. Each check below can refuse a listing outright, or add points to a risk score. A listing that is held keeps the status Pending: you will find it under Listings in the WordPress dashboard, where you can publish it or bin it. Checks set to "Add to risk score" only take effect once a Risk Threshold is entered below. Added by the Automated Listing Moderation for HivePress plugin.', 'listing-moderation-for-hivepress' ),
 			'_order'      => 25,
 
 			'fields'      => [
 				'alm_bypass_verified_vendors'      => [
 					'label'       => esc_html__( 'Verified Vendors', 'listing-moderation-for-hivepress' ),
 					'caption'     => esc_html__( 'Skip checks for verified vendors', 'listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'Skip every moderation check for listings from vendors marked as verified. Vendors can be verified by ticking the Verified checkbox on their profile in the WordPress dashboard.', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'Listings from vendors you have marked as verified skip every check on this screen, including the submission limit below. To verify someone, open Vendors in the WordPress dashboard, edit them, and tick Verified.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 2,
 				],
 
 				'alm_velocity_limit'               => [
-					'label'       => esc_html__( 'Submission Limit (per 24 hours)', 'listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'The maximum number of listings each vendor can submit within 24 hours. Editing an existing listing does not count towards the limit. Leave empty to disable.', 'listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Submission Limit (listings per 24 hours)', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'How many new listings one vendor may add in any 24 hours. Only listings that are live or waiting for review count towards it, so hidden, expired and binned ones do not. Editing an existing listing never counts. Verified vendors are exempt if you have ticked the setting above. Leave empty for no limit.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'number',
 					'min_value'   => 1,
 					'_order'      => 4,
@@ -201,7 +213,8 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_blocked_keywords'             => [
 					'label'       => esc_html__( 'Blocked Keywords', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Words or phrases that block a listing from being submitted. Separate with commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>. For whole-word matching, use Blocked Patterns with <code>\b</code> boundaries instead. Note: WordPress removes a percent sign followed by two letters or digits (like <code>%20</code>) when saving, so such sequences cannot be blocked. The buttons under Blocked Patterns add ready-made starter lists to both boxes for you to review.', 'listing-moderation-for-hivepress' ),
+					/* translators: %20 and %2f inside this text are literal examples of percent-encoded characters, not placeholders. */
+					'description' => __( 'Words or phrases that block a listing from being submitted. Separate with commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>. For whole-word matching, use Blocked Patterns with <code>\b</code> boundaries instead. Note: WordPress removes a percent sign when the next two characters are digits or the letters a to f (so <code>%20</code> and <code>%2f</code>) when saving, so such sequences cannot be blocked. The buttons under Blocked Patterns add ready-made starter lists to both boxes for you to review.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => __( 'cheap, cash in hand, WhatsApp me', 'listing-moderation-for-hivepress' ),
 					'type'        => 'textarea',
 					'max_length'  => 10240,
@@ -211,7 +224,7 @@ function hpalm_register_settings( $settings ) {
 				'alm_blocked_patterns'             => [
 					'label'       => esc_html__( 'Blocked Patterns', 'listing-moderation-for-hivepress' ),
 					/* translators: %2f inside this text is a literal example of a percent-encoded character, not a placeholder. */
-					'description' => __( 'Advanced: regular expressions, <strong>one per line only</strong>. Commas are regex syntax, so they do not separate patterns here. No delimiters, case-insensitive. Examples: <code>\bclass\b</code> blocks the whole word only, not "classic". <code>\bcash\s*only\b</code> blocks "cash only" with any spacing. <code>colou?r</code> blocks both spellings. Escape a literal ~ as <code>\~</code>. Invalid patterns are skipped. Note: WordPress strips angle brackets on save, so assertions containing &lt; cannot be used, and it removes a percent sign followed by two letters or digits (like <code>%2f</code>), so write such patterns without a literal percent sign.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Advanced: regular expressions, <strong>one per line only</strong>. Commas are regex syntax, so they do not separate patterns here. No delimiters, case-insensitive. Examples: <code>\bclass\b</code> blocks the whole word only, not "classic". <code>\bcash\s*only\b</code> blocks "cash only" with any spacing. <code>colou?r</code> blocks both spellings. Escape a literal ~ as <code>\~</code>. Invalid patterns are skipped. Note: WordPress strips angle brackets on save, so assertions containing &lt; cannot be used, and it removes a percent sign when the next two characters are digits or the letters a to f (like <code>%2f</code>), so write such patterns without a literal percent sign.', 'listing-moderation-for-hivepress' ),
 					/* translators: this is a regular-expression example; keep the backslashes as they are. */
 					'placeholder' => __( '\bcash\s*only\b', 'listing-moderation-for-hivepress' ),
 					'type'        => 'textarea',
@@ -220,9 +233,9 @@ function hpalm_register_settings( $settings ) {
 				],
 
 				'alm_block_evasion'                => [
-					'label'       => esc_html__( 'Catch Character Evasion', 'listing-moderation-for-hivepress' ),
-					'caption'     => esc_html__( 'Also match accented and leet-speak look-alikes of blocked words', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Re-checks keywords and patterns against copies of the text with accents removed, invisible characters stripped and common leet substitutions reversed, so blocking <code>fuck</code> also catches <code>fùck</code> and zero-width-character tricks, and blocking <code>shit</code> also catches <code>sh1t</code> and <code>$hit</code>. Substitutions are reversed to their look-alike letter (0 becomes o, 1 becomes i or l, $ becomes s), so a substitution that changes the word (like <code>f0ck</code>) needs its own keyword or pattern. Legitimate accented text (e.g. "café", French names) is NOT blocked by this option; it only widens what your existing keywords match.', 'listing-moderation-for-hivepress' ),
+					'label'       => esc_html__( 'Disguised Spellings', 'listing-moderation-for-hivepress' ),
+					'caption'     => esc_html__( 'Also catch blocked words disguised with symbols or accents', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Re-checks keywords and patterns against copies of the text with accents removed, invisible characters stripped and common leet substitutions reversed, so blocking <code>fuck</code> also catches <code>fùck</code> and zero-width-character tricks, and blocking <code>shit</code> also catches <code>sh1t</code> and <code>$hit</code>. Substitutions are reversed to their look-alike letter (0 becomes o, 1 becomes i or l, $ becomes s), so a substitution that changes the word (like <code>f0ck</code>) needs its own keyword or pattern. This never blocks a word you have not blocked yourself, but it does mean accented spellings of your blocked words match too: block <code>cafe</code> and <code>café</code> is blocked as well. Worth a thought if your listings are written in a language that uses accents.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 30,
 				],
@@ -256,7 +269,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_check_duplicate_titles'       => [
 					'label'       => esc_html__( 'Duplicate Titles', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects when another live or pending listing already has the same title (ignoring case and extra spaces). Compares a precomputed fingerprint of each listing rather than scanning listing content, so it costs one extra database query per submission. Existing listings are fingerprinted automatically in the background after you enable this.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects when another live or pending listing already has the same title, ignoring case and extra spaces. It costs one small database query per submission. Listings that already exist are prepared automatically in the background, 200 at a time, so on a large site an older listing may not be recognised as a duplicate for the first few minutes. Note that if your site builds titles automatically from attributes (the Title Format setting on this tab), vendors never type a title, so there is nothing for this check to compare and it stays quiet.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
@@ -265,7 +278,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_check_duplicate_descriptions' => [
 					'label'       => esc_html__( 'Duplicate Descriptions', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects when another live or pending listing already has an identical description (ignoring case, formatting and extra spaces). Like duplicate titles, this compares stored fingerprints rather than scanning content. Near-duplicates with small wording changes are not detected.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects when another live or pending listing already has an identical description, ignoring case, formatting and extra spaces. The match has to be exact: change one word and it is no longer spotted, so this catches copy-and-paste rather than rewriting.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
@@ -274,7 +287,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_block_ai'                     => [
 					'label'       => esc_html__( 'AI Text Review (OpenAI)', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Sends the listing text to OpenAI\'s Moderation endpoint (model omni-moderation-latest), which flags hate, harassment, violence, self-harm and sexual content. Requires an OpenAI API key, entered on the Integrations tab. The calls cost nothing, but OpenAI refuses every request on an account with no credit or payment method. Listing text is sent to OpenAI\'s servers; disclose this in your privacy policy. If the API is unreachable, submissions proceed unchecked rather than failing, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Sends the words in the listing to OpenAI\'s content checking service, which looks for hate, harassment, violence, self-harm and sexual content. Words only; photos are covered by the setting below. Needs an OpenAI API key on the Integrations tab. The checks cost nothing, but OpenAI refuses every request on an account with no credit or payment method. The listing text leaves your site, so say so in your privacy policy. If OpenAI cannot be reached the submission goes through unchecked rather than failing, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
@@ -283,7 +296,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_block_ai_images'              => [
 					'label'       => esc_html__( 'AI Photo Review (OpenAI)', 'listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'Check listing photos with the OpenAI moderation endpoint, which flags sexual, violent and self-harm imagery. Each photo is checked separately, up to ten per listing, and checking stops as soon as one is flagged, so a listing with several photos takes a little longer to submit. The photos themselves are sent to OpenAI, so this works even on a site that is not publicly reachable; disclose the sharing in your privacy policy. Videos are never sent or checked. Requires an OpenAI API key on the Integrations tab. The calls cost nothing, but OpenAI refuses every request on an account with no credit or payment method. If the service is unavailable the submission proceeds unchecked, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'Check listing photos with the OpenAI moderation endpoint, which flags sexual, violent and self-harm imagery. Each photo is checked separately, up to ten per listing, and checking stops as soon as one is flagged, so a listing with several photos takes a little longer to submit. The photos themselves are sent to OpenAI, so the check works even on a site that is not yet public. The exception is a site that keeps its uploads in cloud storage rather than on this server: there the photo\'s web address is sent instead, and OpenAI has to be able to reach it. Photos leave your site either way, so say so in your privacy policy. Videos are never sent or checked. Requires an OpenAI API key on the Integrations tab. The calls cost nothing, but OpenAI refuses every request on an account with no credit or payment method. If the service is unavailable the submission proceeds unchecked, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => hpalm_get_mode_options(),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
@@ -300,7 +313,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_risk_threshold'               => [
 					'label'       => esc_html__( 'Risk Threshold (points)', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Enables risk scoring. Signals set to "Add to risk score" accumulate points: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. If the total reaches this threshold, the listing is accepted but held as Pending for your review instead of publishing, using the native HivePress moderation flow. Suggested value: 21, so any contact detail or any duplicate triggers review, but a single website mention alone does not. Leave empty to disable scoring. There is deliberately no auto-delete tier: a human always makes the final call.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Points are added up for every check you set to "Add to risk score". When a listing\'s total reaches this number, the listing is accepted but held as Pending for you to approve, instead of going live. This is a trigger point, not a score out of ten and not a percentage: a lower number holds more listings, a higher number holds fewer. Points per check: phone number 25, email address 25, website address 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. A good starting point is 20: one contact detail, or one duplicate, is then enough to hold a listing, while a website address on its own, or shouty capitals on their own, is not. Leave empty to switch scoring off entirely. A listing is never deleted automatically; the worst that happens is that it waits for you.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'number',
 					'min_value'   => 1,
 					'_order'      => 110,
@@ -325,6 +338,7 @@ function hpalm_register_settings( $settings ) {
 				],
 			],
 		];
+
 	}
 
 	if ( isset( $settings['integrations']['sections'] ) ) {
@@ -335,7 +349,7 @@ function hpalm_register_settings( $settings ) {
 		if ( ! isset( $settings['integrations']['sections']['openai'] ) ) {
 			$settings['integrations']['sections']['openai'] = [
 				'title'       => 'OpenAI',
-				'description' => esc_html__( 'Connection settings shared by any installed extension that uses OpenAI services. The moderation checks cost nothing to run, but OpenAI refuses every request until your account has a payment method or purchased credit added, so a brand new account will not work until you add one.', 'listing-moderation-for-hivepress' ),
+				'description' => esc_html__( 'Your OpenAI connection, shared by any plugin on this site that uses OpenAI, so one key serves them all. Automated Listing Moderation uses it for the optional AI text and photo checks under Settings > Listings. Those checks cost nothing to run, but OpenAI refuses every request until the account has a payment method or purchased credit on it, so a brand new account will not work until you add one.', 'listing-moderation-for-hivepress' ),
 				'_order'      => 40,
 				'fields'      => [],
 			];
@@ -349,7 +363,7 @@ function hpalm_register_settings( $settings ) {
 		if ( ! isset( $settings['integrations']['sections']['openai']['fields']['openai_api_key'] ) ) {
 			$settings['integrations']['sections']['openai']['fields']['openai_api_key'] = [
 				'label'       => esc_html__( 'API Key', 'listing-moderation-for-hivepress' ),
-				'description' => __( 'Your OpenAI API key, shared by any installed extension that uses OpenAI\'s Moderation endpoint. The moderation calls themselves cost nothing, but OpenAI will not allow any API request until the account has a payment method or purchased credit on it: a brand new account with no credit refuses every call. If the connection ever stops working, a warning appears on the Listings tab.', 'listing-moderation-for-hivepress' ),
+				'description' => __( 'Only needed if you switch on AI text review or AI photo review under Settings > Listings; leave it empty otherwise. Create a key in the API keys section of <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com</a>, then paste it here. The checks themselves cost nothing, but OpenAI allows no request at all until the account has a payment method or purchased credit, so a brand new account refuses every call. If the connection ever stops working, a warning appears on the Listings tab.', 'listing-moderation-for-hivepress' ),
 				'type'        => 'text',
 				'max_length'  => 256,
 				'_order'      => 10,
@@ -1590,7 +1604,22 @@ function hpalm_check_velocity( $listing, $listing_id ) {
 	);
 
 	if ( is_array( $recent ) && count( $recent ) >= $limit ) {
-		return esc_html__( 'You have reached the maximum number of listings that can be submitted within 24 hours. Please try again later.', 'listing-moderation-for-hivepress' );
+
+		// Naming the number matters: a vendor told they have hit "the maximum"
+		// without being told what it is cannot tell whether to wait an hour or
+		// give up, and has no way of looking the figure up.
+		return esc_html(
+			sprintf(
+				/* translators: %s: the number of listings allowed in 24 hours, already formatted. */
+				_n(
+					'You can add %s listing every 24 hours, and you have reached that for today. You can still edit the listings you already have, and add more tomorrow.',
+					'You can add %s listings every 24 hours, and you have reached that for today. You can still edit the listings you already have, and add more tomorrow.',
+					$limit,
+					'listing-moderation-for-hivepress'
+				),
+				number_format_i18n( $limit )
+			)
+		);
 	}
 
 	return null;
@@ -1999,9 +2028,13 @@ function hpalm_validate_listing_form( $errors, $form ) {
 		$found = hpalm_find_blocked_text_deep( $entry['value'], $keywords, $patterns, $evasion );
 
 		if ( null !== $found ) {
+
+			// Avoids "submitting your listing": the same message is shown on
+			// the edit form, where the vendor is changing a listing they
+			// already have rather than submitting a new one.
 			$errors[] = sprintf(
 				/* translators: 1: the blocked word or phrase, 2: the field label (e.g. Description). */
-				esc_html__( '"%1$s" is a blocked word or phrase (found in %2$s). To continue with submitting your listing, please remove or update it.', 'listing-moderation-for-hivepress' ),
+				esc_html__( 'Please remove or change "%1$s" in the %2$s, then try again. This site does not allow that wording in listings.', 'listing-moderation-for-hivepress' ),
 				esc_html( $found ),
 				esc_html( $entry['label'] )
 			);
@@ -2084,7 +2117,9 @@ function hpalm_validate_listing_form( $errors, $form ) {
 
 		if ( true === hpalm_ai_flagged( implode( "\n\n", $texts ) ) ) {
 			if ( 'block' === $modes['ai'] ) {
-				$errors[] = esc_html__( 'Your listing appears to contain content that violates our content guidelines. Please revise it and try again.', 'listing-moderation-for-hivepress' );
+				// The AI check runs on every text field joined together, so no
+				// single field can honestly be named here.
+				$errors[] = esc_html__( 'This listing was refused by an automatic content check, which looks for hateful, harassing, violent, sexual or self-harm wording. Please read back through the title, description and other details, change anything of that kind, and try again. If you think this is a mistake, please contact the site owner.', 'listing-moderation-for-hivepress' );
 			} else {
 				$signals['ai'] = true;
 			}
@@ -2098,7 +2133,10 @@ function hpalm_validate_listing_form( $errors, $form ) {
 
 		if ( $image_urls && true === hpalm_ai_flags_images( $image_urls ) ) {
 			if ( 'block' === $modes['ai_image'] ) {
-				$errors[] = esc_html__( 'One or more of your listing photos appears to contain inappropriate content. Please replace it and try again.', 'listing-moderation-for-hivepress' );
+				// Photos already on the listing are checked too, not only ones
+				// added in this edit, so a vendor who changed nothing but the
+				// price can still land here and needs telling why.
+				$errors[] = esc_html__( 'One of your photos was refused by an automatic check, which looks for sexual, violent or self-harm imagery. Please remove or replace it and try again. This can be a photo that was already on the listing, not only one you have just added.', 'listing-moderation-for-hivepress' );
 			} else {
 				$signals['ai_image'] = true;
 			}
@@ -2179,14 +2217,14 @@ add_filter( 'hivepress/v1/forms/listing_update/errors', 'hpalm_validate_listing_
  */
 function hpalm_get_signal_labels() {
 	return [
-		'phone'     => __( 'Phone number detected', 'listing-moderation-for-hivepress' ),
-		'email'     => __( 'Email address detected', 'listing-moderation-for-hivepress' ),
-		'url'       => __( 'Website address detected', 'listing-moderation-for-hivepress' ),
-		'caps'      => __( 'Excessive capital letters', 'listing-moderation-for-hivepress' ),
-		'dup_title' => __( 'Duplicate title', 'listing-moderation-for-hivepress' ),
-		'dup_desc'  => __( 'Duplicate description', 'listing-moderation-for-hivepress' ),
-		'ai'        => __( 'AI flagged the listing text', 'listing-moderation-for-hivepress' ),
-		'ai_image'  => __( 'AI flagged a listing photo', 'listing-moderation-for-hivepress' ),
+		'phone'     => __( 'A phone number was found', 'listing-moderation-for-hivepress' ),
+		'email'     => __( 'An email address was found', 'listing-moderation-for-hivepress' ),
+		'url'       => __( 'A website address was found', 'listing-moderation-for-hivepress' ),
+		'caps'      => __( 'Mostly written in capital letters', 'listing-moderation-for-hivepress' ),
+		'dup_title' => __( 'Another listing has the same title', 'listing-moderation-for-hivepress' ),
+		'dup_desc'  => __( 'Another listing has the same description', 'listing-moderation-for-hivepress' ),
+		'ai'        => __( 'The AI check flagged the wording', 'listing-moderation-for-hivepress' ),
+		'ai_image'  => __( 'The AI check flagged a photo', 'listing-moderation-for-hivepress' ),
 	];
 }
 
@@ -2238,23 +2276,99 @@ function hpalm_render_admin_columns( $column, $listing_id ) {
 	$score = get_post_meta( $listing_id, '_hpalm_score', true );
 
 	if ( '' === $score || false === $score ) {
-		echo '&mdash;';
+
+		// Not a dash. A dash could equally mean "checked and clean", "never
+		// checked" or "checked before this plugin existed", and the house
+		// rules forbid an em-dash in anything a reader sees.
+		echo '<span class="hpalm-none">' . esc_html__( 'No score recorded', 'listing-moderation-for-hivepress' ) . '</span>';
 
 		return;
 	}
 
-	echo esc_html( number_format_i18n( hpalm_absint( $score ) ) );
+	$score = hpalm_absint( $score );
 
-	// The pill renders only while the listing really is queued: the marker
-	// alone is not enough, because a rejected listing keeps it in the trash
-	// (deliberately, so this column still explains the trashed row) and a
-	// draft must never claim to be held. hp-status is HivePress's own status
-	// pill; common.min.css ships it to every admin screen (backend scope in
-	// configs/styles.php, verified) and --pending is the amber modifier that
-	// matches the listing's actual status.
-	if ( get_post_meta( $listing_id, '_hpalm_flagged', true ) && 'pending' === get_post_status( $listing_id ) ) {
-		echo ' <span class="hp-status hp-status--pending"><span>' . esc_html__( 'Held', 'listing-moderation-for-hivepress' ) . '</span></span>';
+	echo '<strong>' . esc_html(
+		sprintf(
+			/* translators: %s: the number of risk points, already formatted. */
+			_n( '%s point', '%s points', $score, 'listing-moderation-for-hivepress' ),
+			number_format_i18n( $score )
+		)
+	) . '</strong>';
+
+	// hp-status is HivePress's own status pill; common.min.css ships it to
+	// every admin screen (backend scope in configs/styles.php, verified). The
+	// pill sits on its own line because core styles it white-space: nowrap,
+	// so inline it would widen the column on every row.
+	$pill = hpalm_get_state_pill( $listing_id, $score );
+
+	if ( $pill ) {
+		echo '<br /><span class="hp-status hp-status--' . esc_attr( $pill['modifier'] ) . '"><span>' . esc_html( $pill['label'] ) . '</span></span>';
 	}
+}
+
+/**
+ * Describes what actually became of a scored listing.
+ *
+ * Every scored row used to show a bare number, with a pill only while the
+ * listing was pending. That left four of the five states showing a score and
+ * nothing else, so a binned listing and a published one looked identical and
+ * the reader could not tell whether the score had done anything. The state is
+ * derived rather than stored, because an admin can publish, bin or restore a
+ * listing at any time without the plugin being involved.
+ *
+ * @param int $listing_id Listing ID.
+ * @param int $score      Recorded risk score.
+ * @return array|null Pill label and hp-status modifier, or null when a pill would add nothing.
+ */
+function hpalm_get_state_pill( $listing_id, $score ) {
+	$status    = get_post_status( $listing_id );
+	$threshold = hpalm_absint( get_post_meta( $listing_id, '_hpalm_threshold', true ) );
+
+	// Derived from the score, NOT from the _hpalm_flagged marker. Approving
+	// or rejecting a held listing deletes that marker on purpose (it is what
+	// stops the publish guard reversing the admin's own decision), so a pill
+	// gated on it could never say "Approved" or "Rejected" - the two states
+	// the reader most wants confirmed.
+	$was_held = ( $threshold >= 1 && $score >= $threshold );
+
+	if ( ! $was_held ) {
+		return 'publish' === $status
+			? [
+				'label'    => esc_html__( 'Published as normal', 'listing-moderation-for-hivepress' ),
+				'modifier' => 'publish',
+			]
+			: null;
+	}
+
+	switch ( $status ) {
+		case 'pending':
+			return [
+				'label'    => esc_html__( 'Held for review', 'listing-moderation-for-hivepress' ),
+				'modifier' => 'pending',
+			];
+
+		case 'publish':
+			return [
+				'label'    => esc_html__( 'Held, then approved', 'listing-moderation-for-hivepress' ),
+				'modifier' => 'publish',
+			];
+
+		case 'trash':
+			return [
+				'label'    => esc_html__( 'Held, then rejected', 'listing-moderation-for-hivepress' ),
+				'modifier' => 'draft',
+			];
+
+		// A held listing that reaches its expiry date becomes a draft, so it
+		// leaves the queue without anyone having decided anything.
+		case 'draft':
+			return [
+				'label'    => esc_html__( 'Held, now a draft', 'listing-moderation-for-hivepress' ),
+				'modifier' => 'draft',
+			];
+	}
+
+	return null;
 }
 
 /**
@@ -2329,45 +2443,145 @@ function hpalm_register_meta_box() {
  */
 function hpalm_render_meta_box( $post ) {
 	$listing_id = is_object( $post ) && isset( $post->ID ) ? (int) $post->ID : 0;
-	$score      = $listing_id ? get_post_meta( $listing_id, '_hpalm_score', true ) : '';
+	$status     = $listing_id ? get_post_status( $listing_id ) : '';
 
-	if ( '' === $score || false === $score ) {
-		echo '<p>' . esc_html__( 'No risk signals were recorded for the current content of this listing.', 'listing-moderation-for-hivepress' ) . '</p>';
+	// Add New opens on an auto-draft, where "nothing was found" would be a
+	// statement about a listing that does not exist yet.
+	if ( ! $listing_id || 'auto-draft' === $status ) {
+		echo '<p>' . esc_html__( 'Listings are checked when they are submitted or edited on the site. Nothing has been checked here yet.', 'listing-moderation-for-hivepress' ) . '</p>';
 
 		return;
 	}
 
+	$score = get_post_meta( $listing_id, '_hpalm_score', true );
+
+	if ( '' === $score || false === $score ) {
+
+		// This used to read "No risk signals were recorded", which sounds
+		// like a clean bill of health and is untrue for a listing added in
+		// the dashboard or by an importer, neither of which is ever checked.
+		echo '<p>' . esc_html__( 'No risk score has been recorded for this listing.', 'listing-moderation-for-hivepress' ) . '</p>';
+		echo '<p>' . esc_html__( 'That can mean any of these: it was submitted on the site and nothing was found, risk scoring was switched off at the time because no Risk Threshold had been set, it was added here in the dashboard or by an import (neither of which is ever checked), or it was last submitted before this plugin was installed.', 'listing-moderation-for-hivepress' ) . '</p>';
+
+		return;
+	}
+
+	$score     = hpalm_absint( $score );
 	$threshold = hpalm_absint( get_post_meta( $listing_id, '_hpalm_threshold', true ) );
+	$current   = hpalm_absint( get_option( 'hp_alm_risk_threshold' ) );
 	$signals   = get_post_meta( $listing_id, '_hpalm_signals', true );
+	$flagged   = (bool) get_post_meta( $listing_id, '_hpalm_flagged', true );
 	$labels    = hpalm_get_signal_labels();
 
 	echo '<p><strong>' . esc_html(
 		sprintf(
-			/* translators: 1: the risk score, 2: the risk threshold. */
-			__( 'Risk score: %1$s of %2$s', 'listing-moderation-for-hivepress' ),
-			number_format_i18n( hpalm_absint( $score ) ),
-			number_format_i18n( $threshold )
+			/* translators: %s: the number of risk points, already formatted. */
+			_n( 'Risk score: %s point', 'Risk score: %s points', $score, 'listing-moderation-for-hivepress' ),
+			number_format_i18n( $score )
 		)
 	) . '</strong></p>';
 
-	// Same status-aware pill as the Moderation column: hp-status ships to
-	// every admin screen via common.min.css (backend scope, verified), and
-	// the pill only renders while the listing really is pending review.
-	if ( get_post_meta( $listing_id, '_hpalm_flagged', true ) && 'pending' === get_post_status( $listing_id ) ) {
-		echo '<p><span class="hp-status hp-status--pending"><span>' . esc_html__( 'Held for review', 'listing-moderation-for-hivepress' ) . '</span></span></p>';
+	$pill = hpalm_get_state_pill( $listing_id, $score );
+
+	if ( $pill ) {
+		echo '<p><span class="hp-status hp-status--' . esc_attr( $pill['modifier'] ) . '"><span>' . esc_html( $pill['label'] ) . '</span></span></p>';
+	}
+
+	// The outcome in a sentence. The old screen printed "65 of 21", which
+	// reads as a fraction with a bigger top than bottom; the second number is
+	// not a maximum but the point at which a listing stops being published.
+	if ( $threshold >= 1 ) {
+		if ( $score >= $threshold ) {
+
+			// Past tense and no claim about where the listing is now: the
+			// pill above already says that, and it may since have been
+			// approved, rejected or left to expire.
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %s: the risk threshold that applied, e.g. "20 points". */
+					__( 'That reached your Risk Threshold of %s, which is why this listing was held for review rather than going straight live.', 'listing-moderation-for-hivepress' ),
+					sprintf(
+						/* translators: %s: number of points, already formatted. */
+						_n( '%s point', '%s points', $threshold, 'listing-moderation-for-hivepress' ),
+						number_format_i18n( $threshold )
+					)
+				)
+			) . '</p>';
+		} else {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %s: the risk threshold, e.g. "20 points". */
+					__( 'That is below your Risk Threshold of %s, so the listing was published as normal.', 'listing-moderation-for-hivepress' ),
+					sprintf(
+						/* translators: %s: number of points, already formatted. */
+						_n( '%s point', '%s points', $threshold, 'listing-moderation-for-hivepress' ),
+						number_format_i18n( $threshold )
+					)
+				)
+			) . '</p>';
+		}
+
+		// The stored threshold is the one that applied at the time. Saying
+		// "your limit" about a number the owner has since changed would be a
+		// lie, so say both.
+		if ( $current >= 1 && $current !== $threshold ) {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %s: the current risk threshold, e.g. "30 points". */
+					__( 'Your Risk Threshold has changed since this was checked. It is now %s, and this listing will be measured against the new figure the next time it is submitted on the site.', 'listing-moderation-for-hivepress' ),
+					sprintf(
+						/* translators: %s: number of points, already formatted. */
+						_n( '%s point', '%s points', $current, 'listing-moderation-for-hivepress' ),
+						number_format_i18n( $current )
+					)
+				)
+			) . '</p>';
+		}
 	}
 
 	if ( is_array( $signals ) && $signals ) {
+		echo '<p><strong>' . esc_html(
+			$flagged && 'pending' === $status
+				? esc_html__( 'Why it was held', 'listing-moderation-for-hivepress' )
+				: esc_html__( 'What was found', 'listing-moderation-for-hivepress' )
+		) . '</strong></p>';
+
 		echo '<ul>';
 
 		foreach ( $signals as $signal => $points ) {
-			$label = isset( $labels[ $signal ] ) ? $labels[ $signal ] : $signal;
+			$points = hpalm_absint( $points );
 
-			echo '<li>' . esc_html( $label ) . ' (' . esc_html( number_format_i18n( hpalm_absint( $points ) ) ) . ')</li>';
+			$label = isset( $labels[ $signal ] )
+				? $labels[ $signal ]
+				: sprintf(
+					/* translators: %s: the internal name of a check added by other code. */
+					__( 'Another check (%s)', 'listing-moderation-for-hivepress' ),
+					$signal
+				);
+
+			echo '<li>' . esc_html(
+				sprintf(
+					/* translators: 1: what was found, 2: the number of points it added, already formatted. */
+					_n( '%1$s: %2$s point', '%1$s: %2$s points', $points, 'listing-moderation-for-hivepress' ),
+					$label,
+					number_format_i18n( $points )
+				)
+			) . '</li>';
 		}
 
 		echo '</ul>';
+	} else {
+		echo '<p>' . esc_html__( 'The breakdown behind this score was not recorded. It will be filled in the next time the listing is submitted or edited on the site.', 'listing-moderation-for-hivepress' ) . '</p>';
 	}
+
+	if ( $flagged && 'pending' === $status ) {
+		// Quick Edit is named deliberately: a listing whose category requires
+		// an attribute the vendor has not filled in cannot be saved from this
+		// screen at all, and the row actions are the documented way round it.
+		echo '<p>' . esc_html__( 'You decide what happens next. To approve it, set the status to Published; to reject it, move it to the Bin. HivePress emails the vendor either way. If a required listing field stops you saving from here, use Quick Edit on the Listings screen instead.', 'listing-moderation-for-hivepress' ) . '</p>';
+	}
+
+	echo '<p>' . esc_html__( 'These results are from the last time the listing was submitted or edited on the site. Changes you make here in the dashboard are not checked.', 'listing-moderation-for-hivepress' ) . '</p>';
 }
 
 /**
@@ -2403,7 +2617,16 @@ function hpalm_admin_pill_styles( $hook ) {
 	wp_enqueue_style( 'hpalm-admin' );
 	wp_add_inline_style(
 		'hpalm-admin',
-		'.column-hpalm_score .hp-status span,#hpalm_moderation .hp-status span{color:#8a6100;border-color:#dba617;background:#fcf9e8;}'
+		// The amber pending pill, made readable on white. Only the "held"
+		// modifier needs it; the approved and rejected pills use HivePress's
+		// own colours, which already pass on this background.
+		'.column-hpalm_score .hp-status--pending span,#hpalm_moderation .hp-status--pending span{color:#8a6100;border-color:#dba617;background:#fcf9e8;}'
+		// The pill sits under the score rather than beside it, so it needs a
+		// little air; core styles it for a front-end card, not a table cell.
+		. '.column-hpalm_score .hp-status{margin-top:.35rem;display:inline-block;}'
+		// "No score recorded" is context, not data, so it is quietened to
+		// WordPress's own secondary text colour rather than shouting.
+		. '.column-hpalm_score .hpalm-none{color:#646970;}'
 	);
 }
 
@@ -2741,6 +2964,60 @@ function hpalm_render_import_button() {
 }
 add_action( 'admin_footer', 'hpalm_render_import_button' );
 
+/**
+ * Prints the support link at the foot of the Automated Moderation settings.
+ *
+ * A settings SECTION would have been tidier, but HivePress skips any section
+ * whose fields array is empty (Admin::register_settings, class-admin.php:288
+ * gates on `if ( $section['fields'] )`), and a donation ask has no business
+ * inventing a stored option just to make itself render. So it is appended to
+ * the form instead, in WordPress's own muted description style.
+ *
+ * Deliberately quiet, per the house rules: one placement on this screen only,
+ * never a dashboard notice, nothing dismissable, nothing gated behind it.
+ */
+function hpalm_render_support_link() {
+	$page = ( isset( $_GET['page'] ) && is_string( $_GET['page'] ) ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only check of which admin screen is shown; no state is changed.
+	$tab  = ( isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'listings'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
+
+	if ( 'hp_settings' !== $page || 'listings' !== $tab || ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	?>
+	<script>
+	( function() {
+		var form = document.querySelector( 'form[action*="options.php"]' );
+
+		if ( ! form ) {
+			return;
+		}
+
+		var p = document.createElement( 'p' );
+
+		p.className = 'description';
+		p.style.marginTop = '1.5rem';
+
+		// Built as text plus one anchor, never innerHTML: the wording is
+		// translatable and a translation is not trusted markup.
+		p.appendChild( document.createTextNode( <?php echo wp_json_encode( __( 'If this plugin saved you time or money, consider ', 'listing-moderation-for-hivepress' ) ); ?> ) );
+
+		var a = document.createElement( 'a' );
+
+		a.href        = <?php echo wp_json_encode( esc_url( hpalm_get_support_url() ) ); ?>;
+		a.target      = '_blank';
+		a.rel         = 'noopener noreferrer';
+		a.textContent = <?php echo wp_json_encode( __( 'buying me a coffee', 'listing-moderation-for-hivepress' ) ); ?>;
+
+		p.appendChild( a );
+		p.appendChild( document.createTextNode( <?php echo wp_json_encode( __( '. Sharing these tools for free takes a lot of time and resources, and your support helps me keep doing it for the community. Thank you!', 'listing-moderation-for-hivepress' ) ); ?> ) );
+
+		form.appendChild( p );
+	} )();
+	</script>
+	<?php
+}
+add_action( 'admin_footer', 'hpalm_render_support_link' );
+
 /*
  * Translations load through WordPress's just-in-time textdomain loading
  * from wp-content/languages/plugins/ (the location Loco Translate calls
@@ -3072,6 +3349,10 @@ function hpalm_get_plugin_information( $result, $action, $args ) {
 		'requires_php'  => $plugin_data['RequiresPHP'],
 		'last_updated'  => $release['published'],
 		'download_link' => $release['package'],
+
+		// WordPress renders this by itself as "Donate to this plugin" in the
+		// View details popup, so the third placement costs one line.
+		'donate_link'   => hpalm_get_support_url(),
 		'sections'      => [
 			'description' => wpautop( esc_html( $plugin_data['Description'] ) ),
 			'changelog'   => $release['notes'] ? wpautop( esc_html( $release['notes'] ) ) : '<p>' . esc_html__( 'See the GitHub releases page for the changelog.', 'listing-moderation-for-hivepress' ) . '</p>',
@@ -3104,6 +3385,38 @@ function hpalm_add_action_links( $links ) {
 }
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'hpalm_add_action_links' );
 add_filter( 'network_admin_plugin_action_links_' . plugin_basename( __FILE__ ), 'hpalm_add_action_links' );
+
+/**
+ * The author's support page.
+ *
+ * One place, so the settings tab, the Plugins row and the View details popup
+ * can never drift apart.
+ *
+ * @return string
+ */
+function hpalm_get_support_url() {
+	return 'https://ko-fi.com/chrisbathivepresscommunity';
+}
+
+/**
+ * Adds a quiet "Buy me a coffee" link to this plugin's row meta.
+ *
+ * WordPress fires plugin_row_meta for EVERY plugin on the screen and joins
+ * the items with a pipe, so without the basename test the link would appear
+ * on every row on the site.
+ *
+ * @param array<string> $meta        Row meta links.
+ * @param string        $plugin_file Plugin file the row belongs to.
+ * @return array<string>
+ */
+function hpalm_add_row_meta( $meta, $plugin_file ) {
+	if ( plugin_basename( __FILE__ ) === $plugin_file ) {
+		$meta[] = '<a href="' . esc_url( hpalm_get_support_url() ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Buy me a coffee', 'listing-moderation-for-hivepress' ) . '</a>';
+	}
+
+	return $meta;
+}
+add_filter( 'plugin_row_meta', 'hpalm_add_row_meta', 10, 2 );
 
 /**
  * Handles the manual "Check for updates" click.

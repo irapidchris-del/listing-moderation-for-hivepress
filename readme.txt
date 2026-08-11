@@ -4,7 +4,7 @@ Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.4
+Stable tag: 1.6.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,7 +25,7 @@ There is deliberately **no auto-delete tier**: heuristics can false-positive, so
 
 * **Blocked keywords**: words or phrases, comma- or newline-separated, matched case-insensitively (including inside longer words).
 * **Blocked patterns**: regular expressions, one per line, for whole-word matching and advanced rules.
-* **Character-evasion catching**: optionally re-checks your lists against copies of the text with accents removed, invisible characters stripped, and common leet substitutions reversed (so blocking "shit" also catches "sh1t" and "$hit"). Legitimate accented text is never blocked by this option.
+* **Disguised spellings**: optionally re-checks your lists against copies of the text with accents removed, invisible characters stripped, and common leet substitutions reversed, so blocking "shit" also catches "sh1t" and "$hit". This never blocks a word you have not blocked yourself, but it does mean accented spellings of your blocked words match too: block "cafe" and "café" is blocked as well.
 * **Phone numbers**: sequences of 9 to 14 digits with optional spacing, dashes, brackets, or a leading +. Prices, years, dates and IP addresses are not affected, but any other long run of digits is (see the FAQ).
 * **Email addresses**: anything shaped like an email address.
 * **Website addresses**: http/https/www links plus bare domains with common extensions.
@@ -36,13 +36,13 @@ There is deliberately **no auto-delete tier**: heuristics can false-positive, so
 
 **Submission gates**
 
-* **Verified-vendor bypass**: listings from vendors marked with HivePress's native Verified checkbox skip every check.
-* **Submission limit**: caps how many listings each vendor can submit within 24 hours (editing does not count).
+* **Verified-vendor bypass**: listings from vendors marked with HivePress's native Verified checkbox skip every check, including the submission limit.
+* **Submission limit**: caps how many new listings each vendor can add in any 24 hours. Only live and awaiting-review listings count towards it, and editing an existing listing never does.
 
 **Admin visibility**
 
-* A sortable **Moderation** column on the listings screen showing each listing's risk score and held state.
-* A **Moderation** meta box on the listing edit screen with the score, the threshold in force, and the per-signal breakdown.
+* A sortable **Moderation** column on the listings screen showing each listing's score in points and what became of it: held for review, approved by you, rejected by you, or published as normal.
+* A **Moderation** panel on the listing edit screen that says the score in points, whether it reached your limit, what was found and what each thing was worth, and what to do next.
 * **Starter blocklists** on the settings screen, in four groups you add with one click: Profanity, Sexual content, Slurs and hate speech, and Scams and off-platform selling. Around 120 entries in total. Each is split between keywords and whole-word patterns so that ordinary words and British place names are not caught, and nothing is saved until you review the lists and click Save Changes.
 
 **Fail-open by design**
@@ -131,6 +131,25 @@ Yes, via the `hpalm_risk_weights` filter:
 Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. Suggested threshold: 21.
 
 == Changelog ==
+
+= 1.6.5 =
+* Fixed: the Moderation panel said things like "Risk score: 65 of 21", which reads as a fraction with a bigger top than bottom and means nothing. 21 was never a maximum, it is the point at which a listing stops being published. The panel now says the score in points, whether that reached your Risk Threshold, and what actually became of the listing.
+* Fixed: a scored listing that you had already approved or rejected showed a bare number and nothing else, so there was no way to tell an approved listing from one still waiting. Every scored listing now carries a plain label: held for review, held then approved, held then rejected, held now a draft, or published as normal. The same labels appear in the Moderation column.
+* Fixed: setting a check to "Add to risk score" did nothing at all until a Risk Threshold was entered, and no screen said so. The option now reads "Add to risk score (set a Risk Threshold below first)" until you set one.
+* Fixed: "No risk signals were recorded" sounded like a clean bill of health, when it also appears for listings added in the dashboard or by an import, which are never checked at all. It now says which of those it means.
+* Improved: the Moderation column showed a bare number under a heading that said only "Moderation". It now reads "65 points", and rows with nothing recorded say so instead of showing a dash.
+* Improved: the breakdown now names what was found in plain words ("Another listing has the same title" rather than "Duplicate title") and puts the unit on every line.
+* Improved: a held listing now tells you what to do next, including the Quick Edit route for when a required listing field stops you saving from the edit screen.
+* Improved: the Moderation panel now says when your Risk Threshold has changed since a listing was scored, rather than quietly quoting the old figure as though it were current.
+* Fixed: a vendor who hit the submission limit was told they had reached "the maximum" without being told what it was. The message now names the number.
+* Fixed: the refusal shown for a blocked word said "to continue with submitting your listing" even when the vendor was editing a listing they already had.
+* Improved: the two AI refusals now say what the check looks for and what to do about it, and the photo one points out that a photo already on the listing can be the cause, not only one just added.
+* Fixed: the Disguised Spellings setting claimed accented text is never blocked, which is the opposite of what it does. Blocking "cafe" does also block "café", and the setting now says so.
+* Fixed: the note about percent signs was wrong. WordPress removes a percent sign only when the next two characters are digits or the letters a to f, not any two letters or digits.
+* Improved: the verified-vendor setting now mentions that it also exempts those vendors from the submission limit, and the submission limit says which listings count towards it.
+* Improved: the OpenAI key field now says where to get a key, and that it is only needed if you use the AI checks.
+* Improved: plainer wording throughout the settings, with developer terms such as "fingerprint", "leet-speak", "endpoint" and "tier" removed.
+* Added: a quiet "buy me a coffee" link at the foot of the settings, on the plugin's row on the Plugins screen, and in its View details popup.
 
 = 1.6.4 =
 * First public release to the HivePress community. Every earlier version number was a private build.
