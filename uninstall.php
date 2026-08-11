@@ -2,38 +2,79 @@
 /**
  * Uninstall routine for Automated Listing Moderation for HivePress.
  *
- * Removes all options and hidden fingerprint meta created by this plugin.
- * Settings-screen fields are persisted by HivePress as options prefixed
- * with hp_.
+ * RETAINS the owner's settings and moderation records by default: a plugin
+ * deleted by accident, or removed to reinstall a clean copy, must give the
+ * owner everything back. Destruction is opt-in through the "Delete all data
+ * when this plugin is deleted" checkbox on the settings screen (a delete-time
+ * prompt is not possible: the wp-admin delete-confirmation form is hard-coded
+ * with no hooks, verified against WP 7.0.2). WordPress's own delete-screen
+ * warning claims data will be removed whenever an uninstall.php exists; the
+ * setting's description tells owners that warning does not apply here.
+ *
+ * What retain still cleans: regenerable runtime values only - the cached
+ * GitHub release lookup and the recorded AI-connection status. Everything
+ * the owner configured or the plugin recorded about their listings
+ * survives.
  *
  * @package Automated_Listing_Moderation_For_HivePress
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-delete_option( 'hp_listing_blocked_keywords' );
-delete_option( 'hp_listing_blocked_patterns' );
-delete_option( 'hp_listing_block_evasion' );
-delete_option( 'hp_listing_block_phones' );
-delete_option( 'hp_listing_block_emails' );
-delete_option( 'hp_listing_block_urls' );
-delete_option( 'hp_listing_check_duplicate_titles' );
-delete_option( 'hp_listing_check_duplicate_descriptions' );
-delete_option( 'hp_listing_block_ai' );
-delete_option( 'hp_listing_score_caps' );
-delete_option( 'hp_listing_risk_threshold' );
-delete_option( 'hp_listing_bypass_verified_vendors' );
-delete_option( 'hp_listing_velocity_limit' );
-delete_option( 'hp_listing_block_ai_images' );
+// Regenerable runtime cache: goes on every uninstall, kept on none.
+delete_site_transient( 'hpalm_github_release' );
+delete_transient( 'hpalm_ai_error' );
+
+if ( ! get_option( 'hp_alm_delete_data' ) ) {
+	return;
+}
 
 /*
- * The OpenAI key (hp_openai_api_key) is deliberately NOT deleted. The option
- * name is generic so a single key can be shared with any other OpenAI
- * integration on the site, and deleting a credential another plugin may rely
- * on would be a destructive side effect. Clear the field on the Integrations
- * tab before uninstalling if you want the key removed.
+ * The owner ticked "Delete all data": remove everything the plugin ever
+ * created, under both the 1.5.0+ option names and the 1.4.x generation
+ * (hp_listing_*), so an install that never migrated is cleaned too.
+ *
+ * The hp_alm_delete_data flag itself is deleted LAST: if this file fails
+ * part-way, the flag is still set, so deleting the plugin again finishes
+ * the job instead of silently reverting to "retain" with half the data
+ * gone.
  */
+$hpalm_option_names = [
+	'bypass_verified_vendors',
+	'velocity_limit',
+	'blocked_keywords',
+	'blocked_patterns',
+	'block_evasion',
+	'block_phones',
+	'block_emails',
+	'block_urls',
+	'check_duplicate_titles',
+	'check_duplicate_descriptions',
+	'block_ai',
+	'block_ai_images',
+	'score_caps',
+	'risk_threshold',
+];
+
+foreach ( $hpalm_option_names as $hpalm_name ) {
+	delete_option( 'hp_alm_' . $hpalm_name );
+	delete_option( 'hp_listing_' . $hpalm_name );
+}
+
 delete_option( 'hpalm_hashes_backfilled' );
+delete_option( 'hpalm_options_migrated' );
+
+/*
+ * The OpenAI key (hp_openai_api_key) is NOT deleted even here: the option
+ * name is deliberately generic so one key can be shared with any other
+ * OpenAI integration on the site, and deleting a credential another plugin
+ * may rely on would be a destructive side effect beyond this plugin's own
+ * data. The setting's description says so. Clear the field on the
+ * Integrations tab to remove the key itself.
+ */
 
 delete_post_meta_by_key( '_hpalm_title_hash' );
 delete_post_meta_by_key( '_hpalm_desc_hash' );
@@ -41,3 +82,6 @@ delete_post_meta_by_key( '_hpalm_flagged' );
 delete_post_meta_by_key( '_hpalm_score' );
 delete_post_meta_by_key( '_hpalm_signals' );
 delete_post_meta_by_key( '_hpalm_threshold' );
+
+// Last, deliberately - see the note above.
+delete_option( 'hp_alm_delete_data' );

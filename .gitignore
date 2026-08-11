@@ -1,0 +1,10 @@
+# Development tooling and build output. Never shipped to users.
+phpcs.xml
+/vendor/
+/build/
+/dist/
+.phpcs.cache
+
+# OS noise.
+.DS_Store
+Thumbs.db
