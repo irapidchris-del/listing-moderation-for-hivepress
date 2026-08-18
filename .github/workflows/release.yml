@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v1.6.5)'
+        description: 'Release tag (e.g. v1.6.4)'
         required: true
       notes:
-        description: 'Release notes (Markdown, optional, auto-generated if empty)'
+        description: 'Release notes (Markdown, optional - auto-generated if empty)'
         required: false
         default: ''
 
@@ -22,13 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The cp lines below are an allowlist. A top-level file or folder missing
-      # here never reaches the zip, and tools/package.ps1 parses these same
-      # lines, so a locally built zip carries exactly these files too.
-      #
-      # The asset name is fixed at listing-moderation-for-hivepress.zip: forum posts link to
-      # releases/latest/download/listing-moderation-for-hivepress.zip, so renaming it would break
-      # every published download link.
       - name: Build plugin zip
         run: |
           mkdir -p build/listing-moderation-for-hivepress
@@ -36,6 +29,9 @@ jobs:
           if [ -d languages ]; then cp -r languages build/listing-moderation-for-hivepress/; fi
           cd build
           zip -r listing-moderation-for-hivepress.zip listing-moderation-for-hivepress
+
+      - name: Show what is in the zip
+        run: unzip -l build/listing-moderation-for-hivepress.zip
 
       - name: Create or refresh the release (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
