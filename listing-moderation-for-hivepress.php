@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.6.5
+ * Version:     1.6.6
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -2964,60 +2964,6 @@ function hpalm_render_import_button() {
 }
 add_action( 'admin_footer', 'hpalm_render_import_button' );
 
-/**
- * Prints the support link at the foot of the Automated Moderation settings.
- *
- * A settings SECTION would have been tidier, but HivePress skips any section
- * whose fields array is empty (Admin::register_settings, class-admin.php:288
- * gates on `if ( $section['fields'] )`), and a donation ask has no business
- * inventing a stored option just to make itself render. So it is appended to
- * the form instead, in WordPress's own muted description style.
- *
- * Deliberately quiet, per the house rules: one placement on this screen only,
- * never a dashboard notice, nothing dismissable, nothing gated behind it.
- */
-function hpalm_render_support_link() {
-	$page = ( isset( $_GET['page'] ) && is_string( $_GET['page'] ) ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only check of which admin screen is shown; no state is changed.
-	$tab  = ( isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'listings'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
-
-	if ( 'hp_settings' !== $page || 'listings' !== $tab || ! current_user_can( 'manage_options' ) ) {
-		return;
-	}
-	?>
-	<script>
-	( function() {
-		var form = document.querySelector( 'form[action*="options.php"]' );
-
-		if ( ! form ) {
-			return;
-		}
-
-		var p = document.createElement( 'p' );
-
-		p.className = 'description';
-		p.style.marginTop = '1.5rem';
-
-		// Built as text plus one anchor, never innerHTML: the wording is
-		// translatable and a translation is not trusted markup.
-		p.appendChild( document.createTextNode( <?php echo wp_json_encode( __( 'If this plugin saved you time or money, consider ', 'listing-moderation-for-hivepress' ) ); ?> ) );
-
-		var a = document.createElement( 'a' );
-
-		a.href        = <?php echo wp_json_encode( esc_url( hpalm_get_support_url() ) ); ?>;
-		a.target      = '_blank';
-		a.rel         = 'noopener noreferrer';
-		a.textContent = <?php echo wp_json_encode( __( 'buying me a coffee', 'listing-moderation-for-hivepress' ) ); ?>;
-
-		p.appendChild( a );
-		p.appendChild( document.createTextNode( <?php echo wp_json_encode( __( '. Sharing these tools for free takes a lot of time and resources, and your support helps me keep doing it for the community. Thank you!', 'listing-moderation-for-hivepress' ) ); ?> ) );
-
-		form.appendChild( p );
-	} )();
-	</script>
-	<?php
-}
-add_action( 'admin_footer', 'hpalm_render_support_link' );
-
 /*
  * Translations load through WordPress's just-in-time textdomain loading
  * from wp-content/languages/plugins/ (the location Loco Translate calls
@@ -3389,8 +3335,8 @@ add_filter( 'network_admin_plugin_action_links_' . plugin_basename( __FILE__ ), 
 /**
  * The author's support page.
  *
- * One place, so the settings tab, the Plugins row and the View details popup
- * can never drift apart.
+ * One place, so the Plugins row and the View details popup can never drift
+ * apart.
  *
  * @return string
  */
@@ -3399,11 +3345,15 @@ function hpalm_get_support_url() {
 }
 
 /**
- * Adds a quiet "Buy me a coffee" link to this plugin's row meta.
+ * Adds the house "Donate" link to this plugin's row on the Plugins screen.
  *
- * WordPress fires plugin_row_meta for EVERY plugin on the screen and joins
- * the items with a pipe, so without the basename test the link would appear
- * on every row on the site.
+ * WordPress fires plugin_row_meta for EVERY plugin on the screen, so without the basename
+ * test the link would appear on every row on the site. The markup is copied verbatim from
+ * the house spec in `releasing.md` rather than composed here: every plugin's row has to look
+ * identical and sessions have drifted before. The label is exactly "Donate", matching the
+ * wording WordPress itself uses in the details popup, and the icon is a Dashicon rather than
+ * Font Awesome because Dashicons is the admin's own font and is always loaded there.
+ * WordPress joins row-meta items with " | " itself, so this returns a bare anchor.
  *
  * @param array<string> $meta        Row meta links.
  * @param string        $plugin_file Plugin file the row belongs to.
@@ -3411,11 +3361,15 @@ function hpalm_get_support_url() {
  */
 function hpalm_add_row_meta( $meta, $plugin_file ) {
 	if ( plugin_basename( __FILE__ ) === $plugin_file ) {
-		$meta[] = '<a href="' . esc_url( hpalm_get_support_url() ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Buy me a coffee', 'listing-moderation-for-hivepress' ) . '</a>';
+		$meta[] = '<a href="' . esc_url( hpalm_get_support_url() ) . '" target="_blank" rel="noopener noreferrer">'
+			. '<span class="dashicons dashicons-star-filled" style="font-size:14px;line-height:1.3;"></span> '
+			. esc_html__( 'Donate', 'listing-moderation-for-hivepress' )
+			. '</a>';
 	}
 
 	return $meta;
 }
+
 add_filter( 'plugin_row_meta', 'hpalm_add_row_meta', 10, 2 );
 
 /**

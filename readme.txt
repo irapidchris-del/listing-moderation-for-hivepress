@@ -4,7 +4,7 @@ Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.5
+Stable tag: 1.6.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,10 @@ Yes, via the `hpalm_risk_weights` filter:
 Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. Suggested threshold: 21.
 
 == Changelog ==
+
+= 1.6.6 =
+* Changed: the support link on the Plugins screen now reads "Donate" with a star icon, matching every other extension in the range.
+* Removed: the thank-you line under the settings form. The "Donate" link on the Plugins screen and in the plugin details popup is the only place the ask appears now, so it never interrupts you while you are configuring the plugin.
 
 = 1.6.5 =
 * Fixed: the Moderation panel said things like "Risk score: 65 of 21", which reads as a fraction with a bigger top than bottom and means nothing. 21 was never a maximum, it is the point at which a listing stops being published. The panel now says the score in points, whether that reached your Risk Threshold, and what actually became of the listing.

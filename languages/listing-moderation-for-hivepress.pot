@@ -1,17 +1,43 @@
 # Copyright (C) 2026 ChrisB @ HivePress Community
-# This file is distributed under the same license as the Automated Listing Moderation for HivePress plugin.
+# This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Automated Listing Moderation for HivePress 1.6.5\n"
-"Report-Msgid-Bugs-To: https://community.hivepress.io/u/chrisb/summary\n"
+"Project-Id-Version: Automated Listing Moderation for HivePress 1.6.6\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/listing-moderation-for-hivepress\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-11 18:07+0000\n"
+"POT-Creation-Date: 2026-08-19T11:53:02+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: listing-moderation-for-hivepress\n"
+
+#. Plugin Name of the plugin
+#: listing-moderation-for-hivepress.php
+msgid "Automated Listing Moderation for HivePress"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: listing-moderation-for-hivepress.php
+msgid "https://github.com/irapidchris-del/listing-moderation-for-hivepress"
+msgstr ""
+
+#. Description of the plugin
+#: listing-moderation-for-hivepress.php
+msgid "Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation."
+msgstr ""
+
+#. Author of the plugin
+#: listing-moderation-for-hivepress.php
+msgid "ChrisB @ HivePress Community"
+msgstr ""
+
+#. Author URI of the plugin
+#: listing-moderation-for-hivepress.php
+msgid "https://community.hivepress.io/u/chrisb/summary"
+msgstr ""
 
 #: listing-moderation-for-hivepress.php:171
 msgid "Block submission"
@@ -59,6 +85,7 @@ msgstr ""
 
 #. translators: %20 and %2f inside this text are literal examples of percent-encoded characters, not placeholders.
 #: listing-moderation-for-hivepress.php:217
+#, php-format
 msgid "Words or phrases that block a listing from being submitted. Separate with commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>. For whole-word matching, use Blocked Patterns with <code>\\b</code> boundaries instead. Note: WordPress removes a percent sign when the next two characters are digits or the letters a to f (so <code>%20</code> and <code>%2f</code>) when saving, so such sequences cannot be blocked. The buttons under Blocked Patterns add ready-made starter lists to both boxes for you to review."
 msgstr ""
 
@@ -72,6 +99,7 @@ msgstr ""
 
 #. translators: %2f inside this text is a literal example of a percent-encoded character, not a placeholder.
 #: listing-moderation-for-hivepress.php:227
+#, php-format
 msgid "Advanced: regular expressions, <strong>one per line only</strong>. Commas are regex syntax, so they do not separate patterns here. No delimiters, case-insensitive. Examples: <code>\\bclass\\b</code> blocks the whole word only, not \"classic\". <code>\\bcash\\s*only\\b</code> blocks \"cash only\" with any spacing. <code>colou?r</code> blocks both spellings. Escape a literal ~ as <code>\\~</code>. Invalid patterns are skipped. Note: WordPress strips angle brackets on save, so assertions containing &lt; cannot be used, and it removes a percent sign when the next two characters are digits or the letters a to f (like <code>%2f</code>), so write such patterns without a literal percent sign."
 msgstr ""
 
@@ -210,27 +238,39 @@ msgstr ""
 msgid "Only needed if you switch on AI text review or AI photo review under Settings > Listings; leave it empty otherwise. Create a key in the API keys section of <a href=\"https://platform.openai.com/api-keys\" target=\"_blank\" rel=\"noopener noreferrer\">platform.openai.com</a>, then paste it here. The checks themselves cost nothing, but OpenAI allows no request at all until the account has a payment method or purchased credit, so a brand new account refuses every call. If the connection ever stops working, a warning appears on the Listings tab."
 msgstr ""
 
+#. translators: %s: the number of listings allowed in 24 hours, already formatted.
+#: listing-moderation-for-hivepress.php:1614
+#, php-format
+msgid "You can add %s listing every 24 hours, and you have reached that for today. You can still edit the listings you already have, and add more tomorrow."
+msgid_plural "You can add %s listings every 24 hours, and you have reached that for today. You can still edit the listings you already have, and add more tomorrow."
+msgstr[0] ""
+msgstr[1] ""
+
 #: listing-moderation-for-hivepress.php:1991
 msgid "a listing field"
 msgstr ""
 
 #. translators: 1: the detected text, 2: the field label (e.g. Description).
 #: listing-moderation-for-hivepress.php:2016
+#, php-format
 msgid "Phone numbers are not allowed in listings (\"%1$s\" found in %2$s). Please remove it to continue."
 msgstr ""
 
 #. translators: 1: the detected text, 2: the field label (e.g. Description).
 #: listing-moderation-for-hivepress.php:2018
+#, php-format
 msgid "Email addresses are not allowed in listings (\"%1$s\" found in %2$s). Please remove it to continue."
 msgstr ""
 
 #. translators: 1: the detected text, 2: the field label (e.g. Description).
 #: listing-moderation-for-hivepress.php:2020
+#, php-format
 msgid "Website addresses are not allowed in listings (\"%1$s\" found in %2$s). Please remove it to continue."
 msgstr ""
 
 #. translators: 1: the blocked word or phrase, 2: the field label (e.g. Description).
 #: listing-moderation-for-hivepress.php:2037
+#, php-format
 msgid "Please remove or change \"%1$s\" in the %2$s, then try again. This site does not allow that wording in listings."
 msgstr ""
 
@@ -291,6 +331,18 @@ msgstr ""
 msgid "No score recorded"
 msgstr ""
 
+#. translators: %s: the number of risk points, already formatted.
+#. translators: %s: number of points, already formatted.
+#: listing-moderation-for-hivepress.php:2293
+#: listing-moderation-for-hivepress.php:2505
+#: listing-moderation-for-hivepress.php:2517
+#: listing-moderation-for-hivepress.php:2534
+#, php-format
+msgid "%s point"
+msgid_plural "%s points"
+msgstr[0] ""
+msgstr[1] ""
+
 #: listing-moderation-for-hivepress.php:2337
 msgid "Published as normal"
 msgstr ""
@@ -323,18 +375,29 @@ msgstr ""
 msgid "That can mean any of these: it was submitted on the site and nothing was found, risk scoring was switched off at the time because no Risk Threshold had been set, it was added here in the dashboard or by an import (neither of which is ever checked), or it was last submitted before this plugin was installed."
 msgstr ""
 
+#. translators: %s: the number of risk points, already formatted.
+#: listing-moderation-for-hivepress.php:2479
+#, php-format
+msgid "Risk score: %s point"
+msgid_plural "Risk score: %s points"
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %s: the risk threshold that applied, e.g. "20 points".
 #: listing-moderation-for-hivepress.php:2502
+#, php-format
 msgid "That reached your Risk Threshold of %s, which is why this listing was held for review rather than going straight live."
 msgstr ""
 
 #. translators: %s: the risk threshold, e.g. "20 points".
 #: listing-moderation-for-hivepress.php:2514
+#, php-format
 msgid "That is below your Risk Threshold of %s, so the listing was published as normal."
 msgstr ""
 
 #. translators: %s: the current risk threshold, e.g. "30 points".
 #: listing-moderation-for-hivepress.php:2531
+#, php-format
 msgid "Your Risk Threshold has changed since this was checked. It is now %s, and this listing will be measured against the new figure the next time it is submitted on the site."
 msgstr ""
 
@@ -348,8 +411,17 @@ msgstr ""
 
 #. translators: %s: the internal name of a check added by other code.
 #: listing-moderation-for-hivepress.php:2558
+#, php-format
 msgid "Another check (%s)"
 msgstr ""
+
+#. translators: 1: what was found, 2: the number of points it added, already formatted.
+#: listing-moderation-for-hivepress.php:2565
+#, php-format
+msgid "%1$s: %2$s point"
+msgid_plural "%1$s: %2$s points"
+msgstr[0] ""
+msgstr[1] ""
 
 #: listing-moderation-for-hivepress.php:2574
 msgid "The breakdown behind this score was not recorded. It will be filled in the next time the listing is submitted or edited on the site."
@@ -411,96 +483,86 @@ msgstr ""
 msgid "Everything in that list was already there."
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3002
-msgid "If this plugin saved you time or money, consider "
-msgstr ""
-
-#: listing-moderation-for-hivepress.php:3009
-msgid "buying me a coffee"
-msgstr ""
-
-#: listing-moderation-for-hivepress.php:3012
-msgid ". Sharing these tools for free takes a lot of time and resources, and your support helps me keep doing it for the community. Thank you!"
-msgstr ""
-
-#: listing-moderation-for-hivepress.php:3104
+#: listing-moderation-for-hivepress.php:3050
 msgid "no API key has been entered on the Integrations tab"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3105
+#: listing-moderation-for-hivepress.php:3051
 msgid "OpenAI rejected the API key"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3106
+#: listing-moderation-for-hivepress.php:3052
 msgid "OpenAI refused the request, usually because the account has no credit available. Moderation calls themselves cost nothing, but OpenAI still requires a payment method or purchased credit on the account before any request is allowed"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3107
+#: listing-moderation-for-hivepress.php:3053
 msgid "OpenAI is rate limiting this site because too many requests were sent in a short time. This usually settles by itself"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3108
+#: listing-moderation-for-hivepress.php:3054
 msgid "OpenAI could not download one of the listing photos. This affects photos stored outside this site, such as on cloud storage, when a firewall or CDN rule blocks requests that do not come from a browser"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3109
+#: listing-moderation-for-hivepress.php:3055
 msgid "OpenAI could not read the format of one of the listing photos. It accepts JPEG, PNG, WebP and non-animated GIF"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3110
+#: listing-moderation-for-hivepress.php:3056
 msgid "checking the listing photos took too long, so some were not reviewed. This usually means OpenAI is responding slowly"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3111
+#: listing-moderation-for-hivepress.php:3057
 msgid "OpenAI could not be reached from this site"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3112
+#: listing-moderation-for-hivepress.php:3058
 msgid "OpenAI returned an unexpected error"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3113
+#: listing-moderation-for-hivepress.php:3059
 msgid "OpenAI returned a response this plugin could not read"
 msgstr ""
 
 #. translators: %s: the reason the connection failed, e.g. "OpenAI rejected the API key".
-#: listing-moderation-for-hivepress.php:3120
+#: listing-moderation-for-hivepress.php:3066
+#, php-format
 msgid "Automated Listing Moderation: AI review is switched on, but the last check could not be completed because %s. Listings are still being accepted, without AI review, until this is resolved. Every other moderation check is unaffected."
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3147
+#: listing-moderation-for-hivepress.php:3093
 msgid "Automated Listing Moderation for HivePress requires the HivePress plugin to be installed and activated."
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3358
+#: listing-moderation-for-hivepress.php:3304
 msgid "See the GitHub releases page for the changelog."
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3377
+#: listing-moderation-for-hivepress.php:3323
 msgid "Settings"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3381
+#: listing-moderation-for-hivepress.php:3327
 msgid "Check for updates"
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3414
-msgid "Buy me a coffee"
+#: listing-moderation-for-hivepress.php:3366
+msgid "Donate"
 msgstr ""
 
 #. translators: %s: the new version number.
-#: listing-moderation-for-hivepress.php:3473
+#: listing-moderation-for-hivepress.php:3427
+#, php-format
 msgid "A new version of Automated Listing Moderation for HivePress (%s) is available."
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3476
+#: listing-moderation-for-hivepress.php:3430
 msgid "Automated Listing Moderation for HivePress is up to date."
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3479
+#: listing-moderation-for-hivepress.php:3433
 msgid "Could not check for updates: GitHub did not return a published release for this plugin. If this keeps happening, check the plugin has been released on GitHub, or try again later."
 msgstr ""
 
-#: listing-moderation-for-hivepress.php:3523
+#: listing-moderation-for-hivepress.php:3477
 msgid "Could not rename the update directory."
 msgstr ""
