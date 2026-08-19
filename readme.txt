@@ -4,7 +4,7 @@ Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.7
+Stable tag: 1.6.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,12 @@ Yes, via the `hpalm_risk_weights` filter:
 Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. Suggested threshold: 21.
 
 == Changelog ==
+
+= 1.6.8 =
+* Fixed: submitting a listing could hang for half a minute, and on a busy site that was enough to make the whole site time out for everyone. Photo review sends one request per photo to OpenAI, which downloads each picture itself, and all of that happened while the vendor sat waiting on the submit button. On a six-photo listing it measured 21 seconds at ordinary API speeds and 32 seconds at slow ones. Every submission in progress occupies one of the small number of PHP processes your host gives you, so a handful at once left nothing to serve anybody else and visitors got 504 errors with nothing to connect them to this plugin.
+* Changed: photos are now reviewed in the background, moments after the listing is submitted, instead of during it. Submitting is immediate again. A listing whose photo is refused is held as Pending exactly as before and never appears publicly, so nothing gets past the check that would not have before. The one difference is when the vendor finds out: they are told on review rather than at the moment they press submit.
+* Fixed: the photo review time limit was not the limit it claimed. It was checked only before each photo, so the last one could start with a fraction of a second left and then run its own full timeout on top, turning a stated 20 seconds into 32. Each photo is now given only the time actually remaining.
+* Changed: the text check, which is quick because it sends no pictures, still runs during submission but now gives up after 3 seconds instead of 8.
 
 = 1.6.7 =
 * Checking for updates no longer reports "Could not reach GitHub" when nothing is wrong. GitHub allows a server only a limited number of anonymous update checks each hour, shared by every plugin on the site and, on shared hosting, by every other site on the same server. Running out is ordinary, but it was reported as though the site could not reach GitHub at all. Update checks now read the release from github.com, which sets no such limit, so the message no longer appears. If the limit is ever reached by some other route, the notice now says so plainly instead of blaming your connection.

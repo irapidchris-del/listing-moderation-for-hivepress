@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.6.7
+ * Version:     1.6.8
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -1212,9 +1212,26 @@ function hpalm_ai_flagged( $text ) {
 		return null;
 	}
 
+	/**
+	 * Filters the seconds the synchronous text review may block a submission.
+	 *
+	 * This is the ONLY remote call left on the submit path, so the number is
+	 * a cap on how long one visitor can hold a PHP worker, not a tuning knob.
+	 * Text review carries no images, so OpenAI answers from the payload
+	 * rather than fetching anything: sub-second in normal operation. Raising
+	 * this trades site capacity for a slightly higher chance of a verdict --
+	 * see "Never block a public request on a third party" in
+	 * security-standards.md.
+	 *
+	 * @hook hpalm_ai_text_timeout
+	 * @param {int} $seconds Request timeout. Default 3.
+	 * @return {int} Filtered timeout.
+	 */
+	$timeout = max( 1, min( 10, (int) apply_filters( 'hpalm_ai_text_timeout', 3 ) ) );
+
 	return hpalm_ai_moderation_request(
 		function_exists( 'mb_substr' ) ? mb_substr( $text, 0, 50000 ) : substr( $text, 0, 50000 ),
-		8
+		$timeout
 	);
 }
 
@@ -1261,7 +1278,17 @@ function hpalm_ai_flags_images( $urls ) {
 	$last_reason  = '';
 
 	foreach ( $urls as $url ) {
-		if ( microtime( true ) >= $deadline ) {
+
+		// The budget is a CEILING on the whole run, so what matters is the
+		// time left when a request would START, not when the last one ended.
+		// Testing only "have we passed the deadline" let a request begin with
+		// a hundredth of a second to spare and then run its full timeout on
+		// top: a 20-second budget measured 24-32 seconds of real blocking
+		// (2026-08-19). Give each request whatever is genuinely left, and stop
+		// once that is too little to be worth spending.
+		$remaining = $deadline - microtime( true );
+
+		if ( $remaining < 2 ) {
 			hpalm_record_ai_health( 'image_timeout' );
 
 			$all_verdicts = false;
@@ -1276,7 +1303,7 @@ function hpalm_ai_flags_images( $urls ) {
 					'image_url' => [ 'url' => $url ],
 				],
 			],
-			8
+			(int) min( 8, floor( $remaining ) )
 		);
 
 		if ( true === $result ) {
@@ -1337,6 +1364,39 @@ function hpalm_collect_image_urls( $form ) {
 		}
 	}
 
+	return hpalm_build_image_inputs( $ids );
+}
+
+/**
+ * Collects the photo inputs of a listing that has already been saved.
+ *
+ * The background photo review (hpalm_run_ai_image_review) has no form to
+ * read: it runs in a separate request moments after the submission was
+ * accepted, so the listing's own accessor is the only source. Photos are
+ * attached before validation runs, so by the time the queued job executes
+ * the listing carries the full set.
+ *
+ * @param object $listing Listing model.
+ * @return array
+ */
+function hpalm_collect_listing_image_urls( $listing ) {
+	if ( ! hpalm_is_listing_model( $listing ) || ! $listing->get_id() ) {
+		return [];
+	}
+
+	return hpalm_build_image_inputs( (array) $listing->get_images__id() );
+}
+
+/**
+ * Turns a list of attachment IDs into moderation inputs.
+ *
+ * Shared by the form and listing collectors so both apply the same cap, the
+ * same inline budget and the same video filtering.
+ *
+ * @param array $ids Attachment IDs.
+ * @return array
+ */
+function hpalm_build_image_inputs( $ids ) {
 	$urls = [];
 
 	/**
@@ -1855,6 +1915,127 @@ function hpalm_hold_listing( $listing ) {
 	}
 }
 
+/**
+ * Reviews a listing's photos in the background, and holds it if any is
+ * flagged.
+ *
+ * Queued by hpalm_validate_listing_form() through the HivePress scheduler,
+ * which runs it in a separate request moments after the submission was
+ * accepted (as_enqueue_async_action, components/class-scheduler.php:84 --
+ * verified). Photo review is one remote call per photo against a service
+ * that fetches each image itself, so it can never run on the visitor's
+ * request without putting the whole site's capacity behind a third party.
+ *
+ * A listing accepted here is not a listing approved: whichever way the
+ * setting is configured, a flagged photo ends with the listing held as
+ * pending and invisible to the public, which is what "block" has always
+ * meant in practice. What changes is only WHEN the vendor is told -- at
+ * submission before, on review now. The one thing this cannot do is refuse
+ * the form inline, because the form has been and gone.
+ *
+ * Everything is re-read at run time rather than passed through the queue:
+ * the owner may have changed the setting, verified the vendor or edited the
+ * photos in the gap, and the queue may retry this job.
+ *
+ * @param int $listing_id Listing ID.
+ */
+function hpalm_run_ai_image_review( $listing_id ) {
+	$listing_id = hpalm_absint( $listing_id );
+
+	if ( ! $listing_id ) {
+		return;
+	}
+
+	// Re-read the setting: this job may have been queued under a different
+	// configuration, and a check the owner has since switched off must not
+	// still be holding listings.
+	$mode = hpalm_get_mode( 'hp_alm_block_ai_images' );
+
+	if ( '' === $mode ) {
+		return;
+	}
+
+	// Fully qualified, and guarded: this file declares no namespace and
+	// imports nothing, so a bare Models\Listing would resolve to the global
+	// \Models\Listing and fatal.
+	if ( ! class_exists( '\HivePress\Models\Listing' ) ) {
+		return;
+	}
+
+	$listing = \HivePress\Models\Listing::query()->get_by_id( $listing_id );
+
+	if ( ! hpalm_is_listing_model( $listing ) ) {
+		return;
+	}
+
+	// Re-check the bypass for the same reason, and clear any stale marker,
+	// mirroring gate 1 of the synchronous validation.
+	if ( get_option( 'hp_alm_bypass_verified_vendors' ) && hpalm_is_vendor_verified( $listing ) ) {
+		delete_post_meta( $listing_id, '_hpalm_flagged' );
+
+		return;
+	}
+
+	$image_urls = hpalm_collect_listing_image_urls( $listing );
+
+	if ( ! $image_urls || true !== hpalm_ai_flags_images( $image_urls ) ) {
+		return;
+	}
+
+	if ( 'block' === $mode ) {
+		hpalm_hold_listing( $listing );
+
+		$listing->save();
+
+		return;
+	}
+
+	// Score mode. The synchronous pass has already scored and stored every
+	// other signal, so this adds its points to that record rather than
+	// starting a new one -- and re-compares against the threshold that was
+	// in force for THAT submission, kept in _hpalm_threshold, so a listing
+	// is never held by a threshold it was never judged under.
+	$threshold = hpalm_absint( get_post_meta( $listing_id, '_hpalm_threshold', true ) );
+
+	if ( ! $threshold ) {
+		$threshold = hpalm_absint( get_option( 'hp_alm_risk_threshold' ) );
+	}
+
+	if ( $threshold < 1 ) {
+		return;
+	}
+
+	$weights = hpalm_get_risk_weights();
+	$points  = isset( $weights['ai_image'] ) ? (int) $weights['ai_image'] : 0;
+
+	if ( $points < 1 ) {
+		return;
+	}
+
+	$signals = get_post_meta( $listing_id, '_hpalm_signals', true );
+	$signals = is_array( $signals ) ? $signals : [];
+
+	// Re-running the job must not add the points twice.
+	if ( isset( $signals['ai_image'] ) ) {
+		return;
+	}
+
+	$signals['ai_image'] = $points;
+
+	$score = hpalm_absint( get_post_meta( $listing_id, '_hpalm_score', true ) ) + $points;
+
+	update_post_meta( $listing_id, '_hpalm_score', $score );
+	update_post_meta( $listing_id, '_hpalm_signals', $signals );
+	update_post_meta( $listing_id, '_hpalm_threshold', $threshold );
+
+	if ( $score >= $threshold ) {
+		hpalm_hold_listing( $listing );
+
+		$listing->save();
+	}
+}
+add_action( 'hpalm_ai_image_review', 'hpalm_run_ai_image_review' );
+
 /*
  * -------------------------------------------------------------------------
  * Main validation.
@@ -2126,20 +2307,36 @@ function hpalm_validate_listing_form( $errors, $form ) {
 		}
 	}
 
-	// AI photo review mirrors the text review: last, and never spent on an
-	// already-refused submission.
-	if ( '' !== $modes['ai_image'] && ! $errors ) {
-		$image_urls = hpalm_collect_image_urls( $form );
+	// AI photo review is QUEUED, never run here. It is one remote call per
+	// photo and OpenAI fetches anything sent as a URL server-side, so doing
+	// it inline held the visitor's request -- and one of the site's PHP
+	// workers -- for 21s at a modest 3s per call and 32s at 8s, measured on
+	// a six-photo listing (2026-08-19). Shared hosting runs a handful of
+	// workers; once they are all waiting on this, every other visitor queues
+	// at the gateway and gets a 504, which is exactly how Geolocation Plus
+	// took a live site down the same week. The photos are already attached
+	// to the listing by the time validation runs, so the queued job can read
+	// them from the model. See hpalm_run_ai_image_review() for what happens
+	// to a listing whose photos come back flagged.
+	if ( '' !== $modes['ai_image'] && ! $errors && $listing_id ) {
 
-		if ( $image_urls && true === hpalm_ai_flags_images( $image_urls ) ) {
-			if ( 'block' === $modes['ai_image'] ) {
-				// Photos already on the listing are checked too, not only ones
-				// added in this edit, so a vendor who changed nothing but the
-				// price can still land here and needs telling why.
-				$errors[] = esc_html__( 'One of your photos was refused by an automatic check, which looks for sexual, violent or self-harm imagery. Please remove or replace it and try again. This can be a photo that was already on the listing, not only one you have just added.', 'listing-moderation-for-hivepress' );
-			} else {
-				$signals['ai_image'] = true;
-			}
+		// hivepress()->scheduler goes through Core::__get(), which returns
+		// null for a component that is not registered (class-core.php:393 --
+		// verified) and defines no __isset(), so this must be assigned and
+		// tested, never called straight through.
+		$scheduler = hivepress()->scheduler;
+
+		if ( $scheduler ) {
+			$scheduler->add_action( 'hpalm_ai_image_review', [ $listing_id ] );
+		} else {
+
+			// No scheduler means no photo review, and that is the right
+			// trade here: running it inline instead is the very thing that
+			// takes the site down under traffic. Skipping matches the
+			// plugin's standing policy that a moderation outage must never
+			// take down submission, and the settings screen says so out loud
+			// rather than leaving the owner believing photos are checked.
+			hpalm_record_ai_health( 'no_scheduler' );
 		}
 	}
 
@@ -3054,6 +3251,7 @@ function hpalm_ai_health_notice() {
 		'image_unreachable' => __( 'OpenAI could not download one of the listing photos. This affects photos stored outside this site, such as on cloud storage, when a firewall or CDN rule blocks requests that do not come from a browser', 'listing-moderation-for-hivepress' ),
 		'image_format'      => __( 'OpenAI could not read the format of one of the listing photos. It accepts JPEG, PNG, WebP and non-animated GIF', 'listing-moderation-for-hivepress' ),
 		'image_timeout'     => __( 'checking the listing photos took too long, so some were not reviewed. This usually means OpenAI is responding slowly', 'listing-moderation-for-hivepress' ),
+		'no_scheduler'      => __( 'photo review could not be queued, because HivePress\'s background task scheduler is not available on this site. Photo review runs in the background so that submitting a listing stays fast, so it is skipped rather than run during submission. Text checks are unaffected. Deactivating and reactivating HivePress usually restores it', 'listing-moderation-for-hivepress' ),
 		'unreachable'       => __( 'OpenAI could not be reached from this site', 'listing-moderation-for-hivepress' ),
 		'http_error'        => __( 'OpenAI returned an unexpected error', 'listing-moderation-for-hivepress' ),
 		'bad_response'      => __( 'OpenAI returned a response this plugin could not read', 'listing-moderation-for-hivepress' ),
