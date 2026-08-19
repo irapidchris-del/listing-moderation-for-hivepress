@@ -566,3 +566,11 @@ msgstr ""
 #: listing-moderation-for-hivepress.php:3477
 msgid "Could not rename the update directory."
 msgstr ""
+
+#: listing-moderation-for-hivepress.php:3773
+msgid "No releases have been published for Automated Listing Moderation for HivePress yet, so there is nothing to update to. This is normal for a brand new copy and does not mean anything is wrong."
+msgstr ""
+
+#: listing-moderation-for-hivepress.php:3776
+msgid "GitHub limits how many update checks one server may make each hour, and this server has reached that limit. Nothing is wrong with the plugin or your site, and checking will work again within the hour."
+msgstr ""
