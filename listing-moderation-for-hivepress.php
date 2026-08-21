@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.6.8
+ * Version:     1.6.9
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -140,6 +140,17 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+/**
+ * Plugin version.
+ *
+ * Declared so another plugin can tell this one is present without loading a class or reading the
+ * file header. hpalm_get_version() still reads the header, which stays the single source of truth
+ * for the updater; this constant follows it.
+ */
+if ( ! defined( 'HPALM_VERSION' ) ) {
+	define( 'HPALM_VERSION', '1.6.9' );
+}
 
 /*
  * -------------------------------------------------------------------------
@@ -1665,6 +1676,19 @@ function hpalm_check_velocity( $listing, $listing_id ) {
 
 	if ( is_array( $recent ) && count( $recent ) >= $limit ) {
 
+		/**
+		 * Fires when a vendor is refused a listing for reaching the daily limit.
+		 *
+		 * The vendor already sees a specific error on the form, so this exists for the site owner:
+		 * a vendor hitting the limit repeatedly is the earliest signal of a spam run there is, and
+		 * today it leaves no trace anywhere.
+		 *
+		 * @hook hpalm/limit_reached
+		 * @param {int} $user_id The vendor's user ID.
+		 * @param {int} $limit The configured 24-hour limit.
+		 */
+		do_action( 'hpalm/limit_reached', $user_id, $limit );
+
 		// Naming the number matters: a vendor told they have hit "the maximum"
 		// without being told what it is cannot tell whether to wait an hour or
 		// give up, and has no way of looking the figure up.
@@ -1907,12 +1931,50 @@ add_action( 'hivepress/v1/models/listing/update_status', 'hpalm_reset_moderation
  *
  * @param object $listing Listing model from the form.
  */
-function hpalm_hold_listing( $listing ) {
-	update_post_meta( $listing->get_id(), '_hpalm_flagged', 1 );
+function hpalm_hold_listing( $listing, $context = 'submission' ) {
+	$listing_id = $listing->get_id();
+
+	update_post_meta( $listing_id, '_hpalm_flagged', 1 );
 
 	if ( 'publish' === $listing->get_status() ) {
 		$listing->set_status( 'pending' );
 	}
+
+	$signals = get_post_meta( $listing_id, '_hpalm_signals', true );
+
+	/*
+	 * The action fires here rather than after the caller's save() on purpose. `_hpalm_flagged` is
+	 * the authoritative hold marker -- it is what the status handler re-asserts pending from, and
+	 * what the Moderation column reads -- and it is already written above. So the listing is held
+	 * from this line onwards whether or not the status write that follows succeeds, and a
+	 * notification sent from here is true either way.
+	 */
+
+	/**
+	 * Fires when a listing is held for review.
+	 *
+	 * Nothing in HivePress announces a hold: the vendor's listing simply does not appear, and the
+	 * owner gets only core's generic new-submission email with no score on it. Hook here to tell
+	 * either of them.
+	 *
+	 * The context separates the two holds, because the timing is what makes them different. A
+	 * `submission` hold happens before the listing was ever visible. A `photo_review` hold happens
+	 * minutes or hours later, from the queued photo check, and pulls back a listing the vendor has
+	 * already seen live -- so it needs its own wording, not the same sentence again.
+	 *
+	 * @hook hpalm/listing_held
+	 * @param {int} $listing_id Listing ID.
+	 * @param {string} $context Either `submission` or `photo_review`.
+	 * @param {int} $score Risk score recorded for this submission, zero in block mode.
+	 * @param {array} $signals Points keyed by signal name, empty in block mode.
+	 */
+	do_action(
+		'hpalm/listing_held',
+		$listing_id,
+		$context,
+		hpalm_absint( get_post_meta( $listing_id, '_hpalm_score', true ) ),
+		is_array( $signals ) ? $signals : []
+	);
 }
 
 /**
@@ -1983,7 +2045,7 @@ function hpalm_run_ai_image_review( $listing_id ) {
 	}
 
 	if ( 'block' === $mode ) {
-		hpalm_hold_listing( $listing );
+		hpalm_hold_listing( $listing, 'photo_review' );
 
 		$listing->save();
 
@@ -2029,7 +2091,7 @@ function hpalm_run_ai_image_review( $listing_id ) {
 	update_post_meta( $listing_id, '_hpalm_threshold', $threshold );
 
 	if ( $score >= $threshold ) {
-		hpalm_hold_listing( $listing );
+		hpalm_hold_listing( $listing, 'photo_review' );
 
 		$listing->save();
 	}
@@ -2341,6 +2403,24 @@ function hpalm_validate_listing_form( $errors, $form ) {
 	}
 
 	if ( $errors ) {
+
+		/**
+		 * Fires when a submission is refused outright by a Block-mode check.
+		 *
+		 * Nothing records a refusal today: the form says no and the attempt is forgotten, so a
+		 * vendor grinding through variations to get spam past the filters leaves no trace at all.
+		 * Hook here to count them. The vendor is already told on the form, so anything built on
+		 * this belongs to the site owner rather than to them.
+		 *
+		 * @hook hpalm/submission_blocked
+		 * @param {int} $user_id The vendor's user ID, zero when it cannot be resolved.
+		 * @param {int} $listing_id The listing being submitted, zero for a fresh auto-draft.
+		 */
+		do_action(
+			'hpalm/submission_blocked',
+			hpalm_is_listing_model( $listing ) ? hpalm_absint( $listing->get_user__id() ) : 0,
+			$listing_id
+		);
 
 		// array_values keeps the REST response a JSON array: array_unique
 		// preserves keys, and a gap would make json_encode emit an object.
@@ -3340,6 +3420,48 @@ function hpalm_get_version() {
 }
 
 /**
+ * Queues a background refresh of the release cache.
+ *
+ * Prefers HivePress's scheduler, which is Action Scheduler and already refuses a duplicate of a job
+ * with the same hook and arguments, so repeated admin requests coalesce into one fetch. WP-Cron is
+ * the fallback for the same reason it exists: it also runs the work outside this request.
+ *
+ * Neither is blocking, so on a site where cron itself is starved the cache simply stays cold and no
+ * update is offered until somebody presses Check for updates, which always fetches immediately. That
+ * is the same position such a site is already in for every other scheduled thing on it.
+ *
+ * @return void
+ */
+function hpalm_schedule_release_refresh() {
+	$hook = HPALM_UPDATE_CACHE_KEY . '_refresh';
+
+	// Assigned and then tested: Core defines no __isset(), so isset( hivepress()->x ) is always
+	// false even for a component that is present and working.
+	$scheduler = function_exists( 'hivepress' ) ? hivepress()->scheduler : null;
+
+	if ( $scheduler ) {
+		$scheduler->add_action( $hook );
+
+		return;
+	}
+
+	if ( ! wp_next_scheduled( $hook ) ) {
+		wp_schedule_single_event( time(), $hook );
+	}
+}
+
+/**
+ * Fills the release cache. Runs from the scheduler, never from a page render.
+ *
+ * @return void
+ */
+function hpalm_refresh_release() {
+	hpalm_get_latest_release( true );
+}
+
+add_action( HPALM_UPDATE_CACHE_KEY . '_refresh', 'hpalm_refresh_release' );
+
+/**
  * Gets the latest GitHub release details, cached in a site transient.
  *
  * Successes are cached for 6 hours; failures for 1 hour, so an outage or
@@ -3353,6 +3475,25 @@ function hpalm_get_latest_release( $force = false ) {
 
 	if ( ! $force && is_array( $cached ) ) {
 		return $cached ? $cached : null;
+	}
+
+	/*
+	 * A cold cache must not be filled from somebody's page load. WordPress asks every plugin for its
+	 * update details while rendering an admin request, so with several of these installed one such
+	 * request made one blocking call to GitHub after another, in series: a site with nine of them
+	 * measured 18.6 seconds on a settings screen, once, and then behaved perfectly for six hours
+	 * because the answers were cached again. That is the same shape as the listing-save incident,
+	 * on the admin side rather than the public one.
+	 *
+	 * So the fetch moves to a background job and this answers with what is already known, which on
+	 * the very first check is "nothing yet" for a few seconds. Nothing is skipped: the job runs
+	 * moments later and fills the cache, and the manual Check for updates link still fetches
+	 * immediately, because there a person is waiting for the answer on purpose.
+	 */
+	if ( ! $force ) {
+		hpalm_schedule_release_refresh();
+
+		return null;
 	}
 
 	$release = hpalm_fetch_latest_release();
@@ -3764,18 +3905,36 @@ function hpalm_check_for_update( $update, $plugin_data, $plugin_file ) { // phpc
 
 	$release = hpalm_get_latest_release();
 
+	$details = [
+		'id'     => 'https://github.com/' . HPALM_UPDATE_REPO,
+		'slug'   => HPALM_UPDATE_SLUG,
+		'plugin' => $plugin_file,
+	];
+
+	/*
+	 * Answer even when there is nothing to update to. WordPress skips this plugin outright on a falsy
+	 * return (wp-includes/update.php:557), and only files an answer under `no_update` when it gets one
+	 * (:589-595) -- and that entry is what carries the `slug` the plugins list needs before it will
+	 * print "View details" (wp-admin/includes/class-wp-plugins-list-table.php:1204, verified).
+	 * Returning false left the row with no slug, so View details, the details popup and the donate link
+	 * inside it were all unreachable from the Plugins screen whenever this plugin was up to date, which
+	 * is almost always, or whenever the release check failed.
+	 */
+
 	if ( ! $release ) {
-		return $update;
+		$details['version'] = isset( $plugin_data['Version'] ) ? $plugin_data['Version'] : '0.0.0';
+
+		return $details;
 	}
 
-	return [
-		'id'      => 'https://github.com/' . HPALM_UPDATE_REPO,
-		'slug'    => HPALM_UPDATE_SLUG,
-		'plugin'  => $plugin_file,
-		'version' => $release['version'],
-		'url'     => $release['url'],
-		'package' => $release['package'],
-	];
+	return array_merge(
+		$details,
+		[
+			'version' => $release['version'],
+			'url'     => $release['url'],
+			'package' => $release['package'],
+		]
+	);
 }
 add_filter( 'update_plugins_github.com', 'hpalm_check_for_update', 10, 3 );
 

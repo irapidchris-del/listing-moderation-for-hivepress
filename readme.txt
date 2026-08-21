@@ -4,7 +4,7 @@ Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.8
+Stable tag: 1.6.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,23 @@ Yes, via the `hpalm_risk_weights` filter:
 Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. Suggested threshold: 21.
 
 == Changelog ==
+
+= 1.6.9 =
+* Three new hooks so Notifications for HivePress can tell a vendor their listing is being held, and
+  tell you why: `hpalm/listing_held` (with the score, the signals, and whether it came from the
+  submission or the later photo check), `hpalm/limit_reached` and `hpalm/submission_blocked`.
+* New - an `HPALM_VERSION` constant, so another plugin can tell this one is installed without
+  loading anything.
+* No change to what is blocked, held or scored.
+* Fixed - "View details" is back on the Plugins screen. WordPress only offers that link for a
+  plugin that has told it about itself, and this one stayed quiet whenever there was nothing to
+  update to, which is almost always. The details popup, its changelog and the donate link inside
+  it were all unreachable from the Plugins screen as a result.
+* Fixed - checking for updates no longer holds up an admin page. The check ran while WordPress was
+  building the Plugins screen, so on a site with several of these extensions one page load made one
+  request to GitHub after another and could sit there for many seconds, once, before behaving
+  normally again for hours. The check now runs in the background moments later. Pressing Check for
+  updates still asks GitHub straight away, because you are waiting for that answer.
 
 = 1.6.8 =
 * Fixed: submitting a listing could hang for half a minute, and on a busy site that was enough to make the whole site time out for everyone. Photo review sends one request per photo to OpenAI, which downloads each picture itself, and all of that happened while the vendor sat waiting on the submit button. On a six-photo listing it measured 21 seconds at ordinary API speeds and 32 seconds at slow ones. Every submission in progress occupies one of the small number of PHP processes your host gives you, so a handful at once left nothing to serve anybody else and visitors got 504 errors with nothing to connect them to this plugin.
