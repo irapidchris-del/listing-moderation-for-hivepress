@@ -82,6 +82,7 @@ delete_post_meta_by_key( '_hpalm_flagged' );
 delete_post_meta_by_key( '_hpalm_score' );
 delete_post_meta_by_key( '_hpalm_signals' );
 delete_post_meta_by_key( '_hpalm_threshold' );
+delete_post_meta_by_key( '_hpalm_block_signal' );
 
 // Last, deliberately - see the note above.
 delete_option( 'hp_alm_delete_data' );

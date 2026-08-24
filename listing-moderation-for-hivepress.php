@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.6.9
+ * Version:     1.6.10
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -95,7 +95,9 @@
  *    listing photo to the same OpenAI moderation endpoint in its own
  *    request, because that endpoint accepts exactly one image per call.
  *    Risk-scored outcomes are stored per listing as
- *    _hpalm_score, _hpalm_signals and _hpalm_threshold and surfaced in a
+ *    _hpalm_score, _hpalm_signals and _hpalm_threshold, a photo hold made
+ *    with AI Photo Review on "Block submission" (which holds outright and
+ *    scores nothing) as _hpalm_block_signal, and all of it is surfaced in a
  *    sortable Moderation column and a listing meta box; a clean
  *    resubmission removes the record so the admin screens always describe
  *    the listing's current content.
@@ -149,7 +151,7 @@ defined( 'ABSPATH' ) || exit;
  * for the updater; this constant follows it.
  */
 if ( ! defined( 'HPALM_VERSION' ) ) {
-	define( 'HPALM_VERSION', '1.6.9' );
+	define( 'HPALM_VERSION', '1.6.10' );
 }
 
 /*
@@ -1546,22 +1548,26 @@ function hpalm_get_inline_image( $id, $budget ) {
  */
 
 /**
- * Deletes a listing's stored moderation score, signals and threshold.
+ * Deletes a listing's stored moderation score, signals, threshold and
+ * block-mode photo record.
  *
- * The guard read is effectively free: the first get_post_meta() call for a
- * post primes the full meta cache, so clean submissions skip three delete
- * queries at the cost of one cached read.
+ * The guard reads are effectively free: the first get_post_meta() call for
+ * a post primes the full meta cache, so clean submissions skip four delete
+ * queries at the cost of cached reads. The block-mode marker is part of
+ * the guard because a block-mode photo hold records no score at all, and
+ * a record with no score still has to be removable.
  *
  * @param int $listing_id Listing ID.
  */
 function hpalm_delete_audit_trail( $listing_id ) {
-	if ( '' === get_post_meta( $listing_id, '_hpalm_score', true ) ) {
+	if ( '' === get_post_meta( $listing_id, '_hpalm_score', true ) && '' === get_post_meta( $listing_id, '_hpalm_block_signal', true ) ) {
 		return;
 	}
 
 	delete_post_meta( $listing_id, '_hpalm_score' );
 	delete_post_meta( $listing_id, '_hpalm_signals' );
 	delete_post_meta( $listing_id, '_hpalm_threshold' );
+	delete_post_meta( $listing_id, '_hpalm_block_signal' );
 }
 
 /**
@@ -2031,9 +2037,12 @@ function hpalm_run_ai_image_review( $listing_id ) {
 	}
 
 	// Re-check the bypass for the same reason, and clear any stale marker,
-	// mirroring gate 1 of the synchronous validation.
+	// mirroring gate 1 of the synchronous validation. The block-mode photo
+	// record goes with it: a vendor verified since the hold must not stay
+	// labelled as held by a check they now skip entirely.
 	if ( get_option( 'hp_alm_bypass_verified_vendors' ) && hpalm_is_vendor_verified( $listing ) ) {
 		delete_post_meta( $listing_id, '_hpalm_flagged' );
+		delete_post_meta( $listing_id, '_hpalm_block_signal' );
 
 		return;
 	}
@@ -2045,6 +2054,17 @@ function hpalm_run_ai_image_review( $listing_id ) {
 	}
 
 	if ( 'block' === $mode ) {
+
+		// Block mode records no score, but it must still leave the admin
+		// screens something truthful to show. Without this record the
+		// Moderation column read "No score recorded" and the meta box
+		// offered a list of innocent explanations that excluded the real
+		// one, so an admin clearing the pending queue could publish the
+		// flagged photo believing moderation had found nothing. Written
+		// before the hold so the evidence already exists when the
+		// `hpalm/listing_held` action below announces it.
+		update_post_meta( $listing_id, '_hpalm_block_signal', 'ai_image' );
+
 		hpalm_hold_listing( $listing, 'photo_review' );
 
 		$listing->save();
@@ -2456,6 +2476,13 @@ function hpalm_validate_listing_form( $errors, $form ) {
 			update_post_meta( $listing_id, '_hpalm_score', $score );
 			update_post_meta( $listing_id, '_hpalm_signals', $signal_points );
 			update_post_meta( $listing_id, '_hpalm_threshold', $threshold );
+
+			// The block-mode photo record describes the PREVIOUS
+			// submission's photos, so it is cleared whenever the rest of
+			// the record is rewritten. This submission's own photo verdict
+			// comes from the review job queued above, which writes the
+			// record again if the photos are still flagged.
+			delete_post_meta( $listing_id, '_hpalm_block_signal' );
 		} else {
 			hpalm_delete_audit_trail( $listing_id );
 		}
@@ -2550,9 +2577,10 @@ function hpalm_render_admin_columns( $column, $listing_id ) {
 		return;
 	}
 
-	$score = get_post_meta( $listing_id, '_hpalm_score', true );
+	$score   = get_post_meta( $listing_id, '_hpalm_score', true );
+	$held_by = (string) get_post_meta( $listing_id, '_hpalm_block_signal', true );
 
-	if ( '' === $score || false === $score ) {
+	if ( ( '' === $score || false === $score ) && '' === $held_by ) {
 
 		// Not a dash. A dash could equally mean "checked and clean", "never
 		// checked" or "checked before this plugin existed", and the house
@@ -2562,15 +2590,36 @@ function hpalm_render_admin_columns( $column, $listing_id ) {
 		return;
 	}
 
-	$score = hpalm_absint( $score );
+	$has_score = ( '' !== $score && false !== $score );
+	$score     = hpalm_absint( $score );
 
-	echo '<strong>' . esc_html(
-		sprintf(
-			/* translators: %s: the number of risk points, already formatted. */
-			_n( '%s point', '%s points', $score, 'listing-moderation-for-hivepress' ),
-			number_format_i18n( $score )
-		)
-	) . '</strong>';
+	if ( $has_score ) {
+		echo '<strong>' . esc_html(
+			sprintf(
+				/* translators: %s: the number of risk points, already formatted. */
+				_n( '%s point', '%s points', $score, 'listing-moderation-for-hivepress' ),
+				number_format_i18n( $score )
+			)
+		) . '</strong>';
+	}
+
+	// A block-mode photo hold has no points to show, so the reason itself
+	// is the column value; leaving it out would hang a "Held for review"
+	// pill off nothing, or - worse - off a score too low to have held
+	// anything. The wording is the same signal label the meta box uses.
+	if ( '' !== $held_by ) {
+		$labels = hpalm_get_signal_labels();
+
+		$held_label = isset( $labels[ $held_by ] )
+			? $labels[ $held_by ]
+			: sprintf(
+				/* translators: %s: the internal name of a check added by other code. */
+				__( 'Another check (%s)', 'listing-moderation-for-hivepress' ),
+				$held_by
+			);
+
+		echo ( $has_score ? '<br />' : '' ) . esc_html( $held_label );
+	}
 
 	// hp-status is HivePress's own status pill; common.min.css ships it to
 	// every admin screen (backend scope in configs/styles.php, verified). The
@@ -2605,8 +2654,11 @@ function hpalm_get_state_pill( $listing_id, $score ) {
 	// or rejecting a held listing deletes that marker on purpose (it is what
 	// stops the publish guard reversing the admin's own decision), so a pill
 	// gated on it could never say "Approved" or "Rejected" - the two states
-	// the reader most wants confirmed.
-	$was_held = ( $threshold >= 1 && $score >= $threshold );
+	// the reader most wants confirmed. A block-mode photo hold records no
+	// score, so its own record is consulted too; like the score record, it
+	// survives approval and rejection, which is what lets the pill keep
+	// telling that listing's story afterwards.
+	$was_held = ( $threshold >= 1 && $score >= $threshold ) || '' !== (string) get_post_meta( $listing_id, '_hpalm_block_signal', true );
 
 	if ( ! $was_held ) {
 		return 'publish' === $status
@@ -2730,9 +2782,10 @@ function hpalm_render_meta_box( $post ) {
 		return;
 	}
 
-	$score = get_post_meta( $listing_id, '_hpalm_score', true );
+	$score   = get_post_meta( $listing_id, '_hpalm_score', true );
+	$held_by = (string) get_post_meta( $listing_id, '_hpalm_block_signal', true );
 
-	if ( '' === $score || false === $score ) {
+	if ( ( '' === $score || false === $score ) && '' === $held_by ) {
 
 		// This used to read "No risk signals were recorded", which sounds
 		// like a clean bill of health and is untrue for a listing added in
@@ -2743,6 +2796,11 @@ function hpalm_render_meta_box( $post ) {
 		return;
 	}
 
+	// A block-mode photo hold records no score - "Block submission" holds
+	// outright rather than scoring - so the score parts of this box only
+	// render when there genuinely is one, and the hold explains itself in
+	// its own paragraph below instead.
+	$has_score = ( '' !== $score && false !== $score );
 	$score     = hpalm_absint( $score );
 	$threshold = hpalm_absint( get_post_meta( $listing_id, '_hpalm_threshold', true ) );
 	$current   = hpalm_absint( get_option( 'hp_alm_risk_threshold' ) );
@@ -2750,13 +2808,15 @@ function hpalm_render_meta_box( $post ) {
 	$flagged   = (bool) get_post_meta( $listing_id, '_hpalm_flagged', true );
 	$labels    = hpalm_get_signal_labels();
 
-	echo '<p><strong>' . esc_html(
-		sprintf(
-			/* translators: %s: the number of risk points, already formatted. */
-			_n( 'Risk score: %s point', 'Risk score: %s points', $score, 'listing-moderation-for-hivepress' ),
-			number_format_i18n( $score )
-		)
-	) . '</strong></p>';
+	if ( $has_score ) {
+		echo '<p><strong>' . esc_html(
+			sprintf(
+				/* translators: %s: the number of risk points, already formatted. */
+				_n( 'Risk score: %s point', 'Risk score: %s points', $score, 'listing-moderation-for-hivepress' ),
+				number_format_i18n( $score )
+			)
+		) . '</strong></p>';
+	}
 
 	$pill = hpalm_get_state_pill( $listing_id, $score );
 
@@ -2764,10 +2824,31 @@ function hpalm_render_meta_box( $post ) {
 		echo '<p><span class="hp-status hp-status--' . esc_attr( $pill['modifier'] ) . '"><span>' . esc_html( $pill['label'] ) . '</span></span></p>';
 	}
 
+	// The block-mode hold, stated plainly and in the past tense: the pill
+	// above says where the listing is now, and the setting is described as
+	// it stood at the time because the owner may have changed it since.
+	if ( '' !== $held_by ) {
+		$held_label = isset( $labels[ $held_by ] )
+			? $labels[ $held_by ]
+			: sprintf(
+				/* translators: %s: the internal name of a check added by other code. */
+				__( 'Another check (%s)', 'listing-moderation-for-hivepress' ),
+				$held_by
+			);
+
+		echo '<p>' . esc_html(
+			sprintf(
+				/* translators: %s: what was found, e.g. "The AI check flagged a photo". */
+				__( '%s, and AI Photo Review was set to Block submission at the time, so the listing was held for review outright rather than scored.', 'listing-moderation-for-hivepress' ),
+				$held_label
+			)
+		) . '</p>';
+	}
+
 	// The outcome in a sentence. The old screen printed "65 of 21", which
 	// reads as a fraction with a bigger top than bottom; the second number is
 	// not a maximum but the point at which a listing stops being published.
-	if ( $threshold >= 1 ) {
+	if ( $has_score && $threshold >= 1 ) {
 		if ( $score >= $threshold ) {
 
 			// Past tense and no claim about where the listing is now: the
@@ -2777,6 +2858,22 @@ function hpalm_render_meta_box( $post ) {
 				sprintf(
 					/* translators: %s: the risk threshold that applied, e.g. "20 points". */
 					__( 'That reached your Risk Threshold of %s, which is why this listing was held for review rather than going straight live.', 'listing-moderation-for-hivepress' ),
+					sprintf(
+						/* translators: %s: number of points, already formatted. */
+						_n( '%s point', '%s points', $threshold, 'listing-moderation-for-hivepress' ),
+						number_format_i18n( $threshold )
+					)
+				)
+			) . '</p>';
+		} elseif ( '' !== $held_by ) {
+
+			// With a block-mode photo hold on record, "published as normal"
+			// would be a lie: the listing was pulled back regardless of its
+			// score, so the sentence says which of the two did the holding.
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %s: the risk threshold, e.g. "20 points". */
+					__( 'That is below your Risk Threshold of %s, so the score is not what held this listing; the flagged photo above is.', 'listing-moderation-for-hivepress' ),
 					sprintf(
 						/* translators: %s: number of points, already formatted. */
 						_n( '%s point', '%s points', $threshold, 'listing-moderation-for-hivepress' ),
@@ -2816,9 +2913,14 @@ function hpalm_render_meta_box( $post ) {
 		}
 	}
 
-	if ( is_array( $signals ) && $signals ) {
+	if ( $has_score && is_array( $signals ) && $signals ) {
+
+		// With a block-mode photo hold on record, the list below is not the
+		// reason the listing is held - the flagged photo is, and it is never
+		// in this list because block mode adds no points - so the header
+		// stays "What was found" rather than claiming these signals held it.
 		echo '<p><strong>' . esc_html(
-			$flagged && 'pending' === $status
+			$flagged && 'pending' === $status && '' === $held_by
 				? esc_html__( 'Why it was held', 'listing-moderation-for-hivepress' )
 				: esc_html__( 'What was found', 'listing-moderation-for-hivepress' )
 		) . '</strong></p>';
@@ -2847,7 +2949,7 @@ function hpalm_render_meta_box( $post ) {
 		}
 
 		echo '</ul>';
-	} else {
+	} elseif ( $has_score ) {
 		echo '<p>' . esc_html__( 'The breakdown behind this score was not recorded. It will be filled in the next time the listing is submitted or edited on the site.', 'listing-moderation-for-hivepress' ) . '</p>';
 	}
 

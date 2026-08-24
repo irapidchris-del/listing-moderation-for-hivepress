@@ -4,7 +4,7 @@ Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.9
+Stable tag: 1.6.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,16 @@ Yes, via the `hpalm_risk_weights` filter:
 Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. Suggested threshold: 21.
 
 == Changelog ==
+
+= 1.6.10 =
+* Fixed - a photo refused while AI Photo Review is set to "Block submission" now says so in the
+  dashboard. That kind of hold recorded nothing, so the Moderation column read "No score recorded"
+  and the meta box offered a list of innocent explanations, none of them the real one - and an
+  admin clearing the pending queue could publish the listing believing moderation had found
+  nothing. Both screens now state that the AI check flagged a photo, the held/approved/rejected
+  pill covers these listings too, and the meta box gives the same approve-or-reject guidance held
+  listings have always had.
+* No change to what is blocked, held or scored.
 
 = 1.6.9 =
 * Three new hooks so Notifications for HivePress can tell a vendor their listing is being held, and
