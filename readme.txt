@@ -4,7 +4,7 @@ Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.10
+Stable tag: 1.6.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,10 @@ Yes, via the `hpalm_risk_weights` filter:
 Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. Suggested threshold: 21.
 
 == Changelog ==
+
+= 1.6.11 =
+* Fixed - deleting the plugin now also clears the update check's own leftovers and cancels its
+  background update check. Nothing else has changed in this release.
 
 = 1.6.10 =
 * Fixed - a photo refused while AI Photo Review is set to "Block submission" now says so in the
