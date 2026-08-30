@@ -26,6 +26,7 @@ jobs:
         run: |
           mkdir -p build/listing-moderation-for-hivepress
           cp listing-moderation-for-hivepress.php uninstall.php readme.txt LICENSE build/listing-moderation-for-hivepress/
+          cp -r assets build/listing-moderation-for-hivepress/
           if [ -d languages ]; then cp -r languages build/listing-moderation-for-hivepress/; fi
           cd build
           zip -r listing-moderation-for-hivepress.zip listing-moderation-for-hivepress
