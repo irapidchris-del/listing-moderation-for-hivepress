@@ -109,7 +109,7 @@ Partially. If your site uses HivePress's title format feature (where listing tit
 
 = Why wasn't my regex pattern saved as expected? =
 
-WordPress strips angle brackets from settings textareas on save, so regex assertions containing `<` (e.g. lookbehinds) cannot be used. Invalid patterns are skipped silently, never fatal. Escape a literal `~` as `\~`.
+WordPress strips angle brackets from settings textareas on save, so regex assertions containing `<` (e.g. lookbehinds) cannot be used. It also removes a percent sign whenever the next two characters are digits or the letters a to f (so `%20` and `%2f`), which applies to Blocked Keywords as well: write such patterns without a literal percent sign, and those sequences cannot be blocked as keywords. Invalid patterns are skipped silently, never fatal. Escape a literal `~` as `\~`.
 
 = What happens when I delete the plugin? =
 
@@ -139,14 +139,14 @@ Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicat
   has changed.
 
 = 1.7.2 =
-* Fixed - the "Import starter blocklist" buttons could have appeared on the wrong settings tab, or
-  gone missing from the right one. The plugin worked out which tab you were on from the web address,
-  and the address does not name a tab at all when you open Settings from the HivePress menu, so it
-  had to assume you were on the Listings tab. That assumption held only while Listings happened to
-  be the first tab in the list, which is not something this plugin controls: install an extension
-  that adds a tab sorting above it and the buttons would have turned up on that tab instead, with
-  nothing for them to fill in. The plugin now asks HivePress which settings are actually on the
-  screen, so the buttons appear on the Listings tab and nowhere else, however you got there.
+* Fixed - the "Import starter blocklist" buttons rendered on the wrong settings tab. The plugin
+  worked out which tab you were on from the web address, and the address does not name a tab at all
+  when you open Settings from the HivePress menu, so it assumed you were on the Listings tab. That
+  assumption held only while Listings happened to be the first tab in the list, which is not
+  something this plugin controls: with an extension installed whose tab sorts above it, that route
+  put the buttons, and the note beside them, on that other tab, where neither of the boxes they
+  fill exists. The plugin now asks HivePress which settings are actually on the screen, so the
+  buttons appear on the Listings tab and nowhere else, however you got there.
 
 = 1.7.1 =
 * Changed - the settings screen now carries the same furniture as every other extension in this
@@ -155,16 +155,18 @@ Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicat
   the bottom corner takes you back to the top. If you have another of these extensions installed
   and it has already put one of those on the screen, this plugin leaves it alone, so you always
   see one of each rather than two.
-* Fixed - the settings styles and script no longer load on other extensions' settings tabs. They
-  are only fetched on the Listings tab now, which is a little less for your browser to do
-  everywhere else in the admin.
+* Changed - the settings styles and script are fetched on the Listings tab alone, so nothing extra
+  loads on other extensions' settings tabs.
+* Changed - the quick links reuse the names WordPress already gives the section headings, so a link
+  or a bookmark to a section keeps working.
 
 = 1.7.0 =
 * Added - quick links at the top of the settings screen, one for each section, so you can jump
   straight to Automated Moderation without scrolling, plus a dividing line between sections.
 * Improved - the settings tooltips are wider, so they no longer chop every sentence into a thin
-  ribbon, and each description has been shortened to the points that matter when configuring.
-  The full detail on every check remains in this readme.
+  ribbon, each description has been shortened to the points that matter when configuring, and
+  section descriptions wrap at a readable width instead of running the full width of a wide
+  screen. The full detail on every check remains in this readme.
 * No change to what is blocked, held or scored.
 
 = 1.6.11 =
