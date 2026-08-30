@@ -2,9 +2,9 @@
 Contributors: chrisb
 Tags: hivepress, moderation, spam, listings, marketplace
 Requires at least: 5.8
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.11
+Stable tag: 1.7.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,41 @@ Yes, via the `hpalm_risk_weights` filter:
 Default weights: phone 25, email 25, website 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. Suggested threshold: 21.
 
 == Changelog ==
+
+= 1.7.3 =
+* Changed - internal formatting only. Some explanatory comments in the settings screen's script were
+  reworded to match the wording used across the rest of these extensions, so the file is easier to
+  compare with its siblings. Nothing about the settings screen, or anything else the plugin does,
+  has changed.
+
+= 1.7.2 =
+* Fixed - the "Import starter blocklist" buttons could have appeared on the wrong settings tab, or
+  gone missing from the right one. The plugin worked out which tab you were on from the web address,
+  and the address does not name a tab at all when you open Settings from the HivePress menu, so it
+  had to assume you were on the Listings tab. That assumption held only while Listings happened to
+  be the first tab in the list, which is not something this plugin controls: install an extension
+  that adds a tab sorting above it and the buttons would have turned up on that tab instead, with
+  nothing for them to fill in. The plugin now asks HivePress which settings are actually on the
+  screen, so the buttons appear on the Listings tab and nowhere else, however you got there.
+
+= 1.7.1 =
+* Changed - the settings screen now carries the same furniture as every other extension in this
+  family. The jump links are labelled "Jump to a section:" and stay with you as you scroll, a Save
+  Changes tab sits on the right edge of the screen wherever you are on the page, and a button in
+  the bottom corner takes you back to the top. If you have another of these extensions installed
+  and it has already put one of those on the screen, this plugin leaves it alone, so you always
+  see one of each rather than two.
+* Fixed - the settings styles and script no longer load on other extensions' settings tabs. They
+  are only fetched on the Listings tab now, which is a little less for your browser to do
+  everywhere else in the admin.
+
+= 1.7.0 =
+* Added - quick links at the top of the settings screen, one for each section, so you can jump
+  straight to Automated Moderation without scrolling, plus a dividing line between sections.
+* Improved - the settings tooltips are wider, so they no longer chop every sentence into a thin
+  ribbon, and each description has been shortened to the points that matter when configuring.
+  The full detail on every check remains in this readme.
+* No change to what is blocked, held or scored.
 
 = 1.6.11 =
 * Fixed - deleting the plugin now also clears the update check's own leftovers and cancels its

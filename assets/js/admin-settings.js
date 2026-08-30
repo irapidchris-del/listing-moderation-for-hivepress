@@ -33,9 +33,8 @@
 	 *
 	 * The exact test is the point. The old convention was the substring
 	 * `nav[class*="settings-nav"]`, which was blind to three of the plugins
-	 * it was meant to see - Notifications' `hpnf-anchors`, Action Bar's
-	 * `hpab-anchor-nav` and Account Menu Enhancer's own `amehp-section-nav` -
-	 * and it failed silently.
+	 * it was meant to see - Account Menu Enhancer's own nav was called
+	 * `amehp-section-nav` - and it failed silently.
 	 * ================================================================== */
 
 	var CHROME = {
@@ -46,14 +45,12 @@
 	};
 
 	/*
-	 * The wording, from the localised data this plugin prints on the page.
-	 *
-	 * Every string falls back to its English source, so the chrome still
-	 * renders if the enqueue ever stops localising - a nav labelled in
-	 * English is a smaller failure than a nav labelled "undefined".
-	 * Keep this helper self-contained: the whole block is copied between
-	 * plugins, and anything it reaches out to would have to be copied with
-	 * it or land as a missing function on somebody's settings screen.
+	 * The only thing in this block that reaches outside itself, and it is
+	 * a read of one localised object with a fallback for every string. That
+	 * is deliberate: the block is copied verbatim across the extension
+	 * family, so anything it depended on would have to be copied with it,
+	 * and a copy that landed without its dependency would break nothing
+	 * until somebody opened that plugin's settings screen.
 	 */
 	function chromeLabels() {
 		return ( window.hpalmSettingsData && window.hpalmSettingsData.labels ) || {};
@@ -92,8 +89,9 @@
 			return;
 		}
 
-		// Direct children only: a panel inside the form can carry an h2 of its
-		// own, and that one is neither a section nor a target.
+		// Direct children only. A settings section is a direct child of the
+		// form; an h2 nested inside a panel or a card is not a section and
+		// must not become a quick link.
 		var headings = form.querySelectorAll( ':scope > h2' );
 
 		if ( headings.length < 2 ) {
@@ -130,7 +128,8 @@
 			 * Reuse the id WordPress already put on the heading and mint one
 			 * only where there is none. Overwriting it breaks every link,
 			 * bookmark and sibling script pointing at the real
-			 * `wp-settings-section-{name}` id.
+			 * `wp-settings-section-{name}` id, which is what the first
+			 * version of this nav did.
 			 */
 			if ( ! heading.id ) {
 				heading.id = CHROME.prefix + '-section-' + index;

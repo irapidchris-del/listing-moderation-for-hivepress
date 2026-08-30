@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.6.11
+ * Version:     1.7.3
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -151,7 +151,7 @@ defined( 'ABSPATH' ) || exit;
  * for the updater; this constant follows it.
  */
 if ( ! defined( 'HPALM_VERSION' ) ) {
-	define( 'HPALM_VERSION', '1.6.11' );
+	define( 'HPALM_VERSION', '1.7.3' );
 }
 
 /*
@@ -204,21 +204,21 @@ function hpalm_register_settings( $settings ) {
 
 		$settings['listings']['sections']['alm_moderation'] = [
 			'title'       => esc_html__( 'Automated Moderation', 'listing-moderation-for-hivepress' ),
-			'description' => esc_html__( 'Checks each listing as it is submitted or edited on your site, and either refuses it or holds it for you to approve. Listings edited in the WordPress dashboard are never checked. Each check below can refuse a listing outright, or add points to a risk score. A listing that is held keeps the status Pending: you will find it under Listings in the WordPress dashboard, where you can publish it or bin it. Checks set to "Add to risk score" only take effect once a Risk Threshold is entered below. Added by the Automated Listing Moderation for HivePress plugin.', 'listing-moderation-for-hivepress' ),
+			'description' => esc_html__( 'Checks each listing as it is submitted or edited on your site, and either refuses it or holds it as Pending under Listings in the WordPress dashboard for you to publish or bin; listings edited in the dashboard are never checked. Checks set to "Add to risk score" only take effect once a Risk Threshold is entered below. Added by the Automated Listing Moderation for HivePress plugin.', 'listing-moderation-for-hivepress' ),
 			'_order'      => 25,
 
 			'fields'      => [
 				'alm_bypass_verified_vendors'      => [
 					'label'       => esc_html__( 'Verified Vendors', 'listing-moderation-for-hivepress' ),
 					'caption'     => esc_html__( 'Skip checks for verified vendors', 'listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'Listings from vendors you have marked as verified skip every check on this screen, including the submission limit below. To verify someone, open Vendors in the WordPress dashboard, edit them, and tick Verified.', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'Listings from vendors you have marked as verified skip every check on this screen, including the submission limit below. To verify someone, edit them under Vendors in the WordPress dashboard and tick Verified.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 2,
 				],
 
 				'alm_velocity_limit'               => [
 					'label'       => esc_html__( 'Submission Limit (listings per 24 hours)', 'listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'How many new listings one vendor may add in any 24 hours. Only listings that are live or waiting for review count towards it, so hidden, expired and binned ones do not. Editing an existing listing never counts. Verified vendors are exempt if you have ticked the setting above. Leave empty for no limit.', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'How many new listings one vendor may add in any 24 hours; only live and waiting-for-review listings count, and editing an existing listing never does. Verified vendors are exempt if you have ticked the setting above. Leave empty for no limit.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'number',
 					'min_value'   => 1,
 					'_order'      => 4,
@@ -226,8 +226,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_blocked_keywords'             => [
 					'label'       => esc_html__( 'Blocked Keywords', 'listing-moderation-for-hivepress' ),
-					/* translators: %20 and %2f inside this text are literal examples of percent-encoded characters, not placeholders. */
-					'description' => __( 'Words or phrases that block a listing from being submitted. Separate with commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>. For whole-word matching, use Blocked Patterns with <code>\b</code> boundaries instead. Note: WordPress removes a percent sign when the next two characters are digits or the letters a to f (so <code>%20</code> and <code>%2f</code>) when saving, so such sequences cannot be blocked. The buttons under Blocked Patterns add ready-made starter lists to both boxes for you to review.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Words or phrases that block a listing from being submitted, separated by commas or new lines. Matching is case-insensitive and matches <strong>inside</strong> longer words: blocking <code>class</code> also blocks <code>classic</code>, so use Blocked Patterns with <code>\b</code> boundaries for whole words. The buttons under Blocked Patterns add ready-made starter lists to both boxes for you to review.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => __( 'cheap, cash in hand, WhatsApp me', 'listing-moderation-for-hivepress' ),
 					'type'        => 'textarea',
 					'max_length'  => 10240,
@@ -236,8 +235,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_blocked_patterns'             => [
 					'label'       => esc_html__( 'Blocked Patterns', 'listing-moderation-for-hivepress' ),
-					/* translators: %2f inside this text is a literal example of a percent-encoded character, not a placeholder. */
-					'description' => __( 'Advanced: regular expressions, <strong>one per line only</strong>. Commas are regex syntax, so they do not separate patterns here. No delimiters, case-insensitive. Examples: <code>\bclass\b</code> blocks the whole word only, not "classic". <code>\bcash\s*only\b</code> blocks "cash only" with any spacing. <code>colou?r</code> blocks both spellings. Escape a literal ~ as <code>\~</code>. Invalid patterns are skipped. Note: WordPress strips angle brackets on save, so assertions containing &lt; cannot be used, and it removes a percent sign when the next two characters are digits or the letters a to f (like <code>%2f</code>), so write such patterns without a literal percent sign.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Advanced: regular expressions, <strong>one per line only</strong> (commas are regex syntax, so they do not separate patterns). No delimiters, case-insensitive, e.g. <code>\bclass\b</code> blocks the whole word only and <code>\bcash\s*only\b</code> blocks "cash only" with any spacing; escape a literal ~ as <code>\~</code>, and invalid patterns are skipped. Note WordPress strips angle brackets on save, so assertions containing &lt; cannot be used.', 'listing-moderation-for-hivepress' ),
 					/* translators: this is a regular-expression example; keep the backslashes as they are. */
 					'placeholder' => __( '\bcash\s*only\b', 'listing-moderation-for-hivepress' ),
 					'type'        => 'textarea',
@@ -248,14 +246,14 @@ function hpalm_register_settings( $settings ) {
 				'alm_block_evasion'                => [
 					'label'       => esc_html__( 'Disguised Spellings', 'listing-moderation-for-hivepress' ),
 					'caption'     => esc_html__( 'Also catch blocked words disguised with symbols or accents', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Re-checks keywords and patterns against copies of the text with accents removed, invisible characters stripped and common leet substitutions reversed, so blocking <code>fuck</code> also catches <code>fùck</code> and zero-width-character tricks, and blocking <code>shit</code> also catches <code>sh1t</code> and <code>$hit</code>. Substitutions are reversed to their look-alike letter (0 becomes o, 1 becomes i or l, $ becomes s), so a substitution that changes the word (like <code>f0ck</code>) needs its own keyword or pattern. This never blocks a word you have not blocked yourself, but it does mean accented spellings of your blocked words match too: block <code>cafe</code> and <code>café</code> is blocked as well. Worth a thought if your listings are written in a language that uses accents.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Re-checks your keywords and patterns against copies of the text with accents removed, invisible characters stripped and common leet substitutions reversed, so blocking <code>shit</code> also catches <code>sh1t</code> and <code>$hit</code>. A substitution that changes the word (like <code>f0ck</code>) still needs its own keyword or pattern. This never blocks a word you have not blocked yourself, but accented spellings of your blocked words do match: block <code>cafe</code> and <code>café</code> is blocked as well.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 30,
 				],
 
 				'alm_block_phones'                 => [
 					'label'       => esc_html__( 'Phone Numbers', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects sequences of 9 to 14 digits, optionally separated by spaces, dashes or brackets, with an optional leading +, e.g. <code>07123 456789</code> or <code>+44 7911 123456</code>. Prices, years, dates and IP addresses are not affected. Be aware that <strong>any</strong> other run of 9 to 14 digits also matches, including barcodes, ISBNs and long order or reference numbers: if your listings routinely carry those, choose "Add to risk score" rather than "Block submission", so a genuine listing is held for your review instead of being refused. Sharing phone numbers is often an attempt to move bookings off-platform.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects sequences of 9 to 14 digits with optional spaces, dashes, brackets or a leading +, e.g. <code>07123 456789</code>; prices, years, dates and IP addresses are not affected. Be aware that <strong>any</strong> other run of 9 to 14 digits also matches, including barcodes, ISBNs and long reference numbers: if your listings routinely carry those, choose "Add to risk score" rather than "Block submission".', 'listing-moderation-for-hivepress' ),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
@@ -282,7 +280,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_check_duplicate_titles'       => [
 					'label'       => esc_html__( 'Duplicate Titles', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Detects when another live or pending listing already has the same title, ignoring case and extra spaces. It costs one small database query per submission. Listings that already exist are prepared automatically in the background, 200 at a time, so on a large site an older listing may not be recognised as a duplicate for the first few minutes. Note that if your site builds titles automatically from attributes (the Title Format setting on this tab), vendors never type a title, so there is nothing for this check to compare and it stays quiet.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Detects when another live or pending listing already has the same title, ignoring case and extra spaces. Existing listings are prepared automatically in the background, so on a large site an older listing may not be recognised for the first few minutes. If your site builds titles from attributes (the Title Format setting on this tab), vendors never type a title and this check stays quiet.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
@@ -300,7 +298,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_block_ai'                     => [
 					'label'       => esc_html__( 'AI Text Review (OpenAI)', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Sends the words in the listing to OpenAI\'s content checking service, which looks for hate, harassment, violence, self-harm and sexual content. Words only; photos are covered by the setting below. Needs an OpenAI API key on the Integrations tab. The checks cost nothing, but OpenAI refuses every request on an account with no credit or payment method. The listing text leaves your site, so say so in your privacy policy. If OpenAI cannot be reached the submission goes through unchecked rather than failing, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Sends the words in the listing (not the photos) to OpenAI\'s content checking service, which looks for hate, harassment, violence, self-harm and sexual content; it needs an OpenAI API key on the Integrations tab. The checks cost nothing, but OpenAI refuses every request on an account with no credit or payment method, and the listing text leaves your site, so say so in your privacy policy. If OpenAI cannot be reached the submission goes through unchecked, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => $modes,
@@ -309,7 +307,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_block_ai_images'              => [
 					'label'       => esc_html__( 'AI Photo Review (OpenAI)', 'listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'Check listing photos with the OpenAI moderation endpoint, which flags sexual, violent and self-harm imagery. Each photo is checked separately, up to ten per listing, and checking stops as soon as one is flagged, so a listing with several photos takes a little longer to submit. The photos themselves are sent to OpenAI, so the check works even on a site that is not yet public. The exception is a site that keeps its uploads in cloud storage rather than on this server: there the photo\'s web address is sent instead, and OpenAI has to be able to reach it. Photos leave your site either way, so say so in your privacy policy. Videos are never sent or checked. Requires an OpenAI API key on the Integrations tab. The calls cost nothing, but OpenAI refuses every request on an account with no credit or payment method. If the service is unavailable the submission proceeds unchecked, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'Checks listing photos (never videos) with the same OpenAI service, which flags sexual, violent and self-harm imagery; up to ten photos are checked per listing, and an OpenAI API key on the Integrations tab is required. The calls cost nothing, but OpenAI refuses every request on an account with no credit or payment method, and the photos leave your site, so say so in your privacy policy. If the service is unavailable the submission proceeds unchecked, and a warning appears on this screen.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'select',
 					'options'     => hpalm_get_mode_options(),
 					'placeholder' => esc_html__( 'Disabled', 'listing-moderation-for-hivepress' ),
@@ -326,7 +324,7 @@ function hpalm_register_settings( $settings ) {
 
 				'alm_risk_threshold'               => [
 					'label'       => esc_html__( 'Risk Threshold (points)', 'listing-moderation-for-hivepress' ),
-					'description' => __( 'Points are added up for every check you set to "Add to risk score". When a listing\'s total reaches this number, the listing is accepted but held as Pending for you to approve, instead of going live. This is a trigger point, not a score out of ten and not a percentage: a lower number holds more listings, a higher number holds fewer. Points per check: phone number 25, email address 25, website address 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50. A good starting point is 20: one contact detail, or one duplicate, is then enough to hold a listing, while a website address on its own, or shouty capitals on their own, is not. Leave empty to switch scoring off entirely. A listing is never deleted automatically; the worst that happens is that it waits for you.', 'listing-moderation-for-hivepress' ),
+					'description' => __( 'Every check set to "Add to risk score" adds points, and a listing whose total reaches this number is accepted but held as Pending for you to approve instead of going live: a lower number holds more listings, a higher number fewer, and a listing is never deleted automatically. Points per check: phone number 25, email address 25, website address 15, excessive capitals 15, duplicate title 40, duplicate description 40, AI text flag 50, AI photo flag 50; a good starting point is 20, so one contact detail or one duplicate is enough to hold a listing. Leave empty to switch scoring off entirely.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'number',
 					'min_value'   => 1,
 					'_order'      => 110,
@@ -338,14 +336,14 @@ function hpalm_register_settings( $settings ) {
 		// (expiration = 30, and extension sections observed up to 100).
 		$settings['listings']['sections']['alm_removal'] = [
 			'title'       => esc_html__( 'Removing Automated Listing Moderation', 'listing-moderation-for-hivepress' ),
-			'description' => esc_html__( 'When you delete this plugin, WordPress always warns that deleting it "will also delete its data". Unless the box below is ticked, that warning does not apply: your settings and moderation records are kept, so you can reinstall later and carry on where you left off. Deactivating never removes anything.', 'listing-moderation-for-hivepress' ),
+			'description' => esc_html__( 'Whatever the WordPress delete warning says, deleting this plugin keeps your settings and moderation records unless the box below is ticked, so you can reinstall later and carry on where you left off. Deactivating never removes anything.', 'listing-moderation-for-hivepress' ),
 			'_order'      => 999,
 
 			'fields'      => [
 				'alm_delete_data' => [
 					'label'       => esc_html__( 'Data Removal', 'listing-moderation-for-hivepress' ),
 					'caption'     => esc_html__( 'Delete all data when this plugin is deleted', 'listing-moderation-for-hivepress' ),
-					'description' => esc_html__( 'Tick this only if you want deleting the plugin to permanently remove every Automated Moderation setting, every stored risk score and held-for-review marker, and the duplicate-detection fingerprints. This cannot be undone. The shared OpenAI API key is kept either way, because other extensions may use it.', 'listing-moderation-for-hivepress' ),
+					'description' => esc_html__( 'Tick this only if deleting the plugin should permanently remove every Automated Moderation setting, stored risk score and duplicate-detection record; this cannot be undone. The shared OpenAI API key is kept either way, because other extensions may use it.', 'listing-moderation-for-hivepress' ),
 					'type'        => 'checkbox',
 					'_order'      => 10,
 				],
@@ -362,7 +360,7 @@ function hpalm_register_settings( $settings ) {
 		if ( ! isset( $settings['integrations']['sections']['openai'] ) ) {
 			$settings['integrations']['sections']['openai'] = [
 				'title'       => 'OpenAI',
-				'description' => esc_html__( 'Your OpenAI connection, shared by any plugin on this site that uses OpenAI, so one key serves them all. Automated Listing Moderation uses it for the optional AI text and photo checks under Settings > Listings. Those checks cost nothing to run, but OpenAI refuses every request until the account has a payment method or purchased credit on it, so a brand new account will not work until you add one.', 'listing-moderation-for-hivepress' ),
+				'description' => esc_html__( 'Your OpenAI connection, shared by any plugin on this site that uses OpenAI, so one key serves them all; Automated Listing Moderation uses it for the optional AI text and photo checks under Settings > Listings. Those checks cost nothing to run, but OpenAI refuses every request until the account has a payment method or purchased credit on it.', 'listing-moderation-for-hivepress' ),
 				'_order'      => 40,
 				'fields'      => [],
 			];
@@ -376,7 +374,7 @@ function hpalm_register_settings( $settings ) {
 		if ( ! isset( $settings['integrations']['sections']['openai']['fields']['openai_api_key'] ) ) {
 			$settings['integrations']['sections']['openai']['fields']['openai_api_key'] = [
 				'label'       => esc_html__( 'API Key', 'listing-moderation-for-hivepress' ),
-				'description' => __( 'Only needed if you switch on AI text review or AI photo review under Settings > Listings; leave it empty otherwise. Create a key in the API keys section of <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com</a>, then paste it here. The checks themselves cost nothing, but OpenAI allows no request at all until the account has a payment method or purchased credit, so a brand new account refuses every call. If the connection ever stops working, a warning appears on the Listings tab.', 'listing-moderation-for-hivepress' ),
+				'description' => __( 'Only needed if you switch on AI text or photo review under Settings > Listings; create a key in the API keys section of <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com</a> and paste it here. The checks cost nothing, but OpenAI allows no request at all until the account has a payment method or purchased credit. If the connection ever stops working, a warning appears on the Listings tab.', 'listing-moderation-for-hivepress' ),
 				'type'        => 'text',
 				'max_length'  => 256,
 				'_order'      => 10,
@@ -1936,6 +1934,7 @@ add_action( 'hivepress/v1/models/listing/update_status', 'hpalm_reset_moderation
  * the moment something other than an admin approval tries to publish it.
  *
  * @param object $listing Listing model from the form.
+ * @param string $context What triggered the hold: 'submission' or 'photo_review'.
  */
 function hpalm_hold_listing( $listing, $context = 'submission' ) {
 	$listing_id = $listing->get_id();
@@ -2596,7 +2595,7 @@ function hpalm_render_admin_columns( $column, $listing_id ) {
 	if ( $has_score ) {
 		echo '<strong>' . esc_html(
 			sprintf(
-				/* translators: %s: the number of risk points, already formatted. */
+				/* translators: %s: number of points, already formatted. */
 				_n( '%s point', '%s points', $score, 'listing-moderation-for-hivepress' ),
 				number_format_i18n( $score )
 			)
@@ -2976,8 +2975,8 @@ function hpalm_render_meta_box( $post ) {
  * box, so HivePress's pills everywhere else in wp-admin are untouched.
  *
  * Registered as an inline-only stylesheet (a false src is the documented
- * way) so the plugin still ships no asset files and nothing has to be added
- * to the release packaging.
+ * way): three rules do not need a file of their own, and the listing screens
+ * they touch are not the settings screen the assets folder serves.
  *
  * @param string $hook Current admin page.
  */
@@ -3009,8 +3008,110 @@ function hpalm_admin_pill_styles( $hook ) {
 	);
 }
 
+/**
+ * Whether the settings tab currently being rendered is this plugin's own.
+ *
+ * Answered from the fields HivePress has actually registered for this request,
+ * never from $_GET['tab']. The address cannot be trusted: get_settings_tab()
+ * falls back to the FIRST tab whenever "tab" is absent (class-admin.php:607-622),
+ * and the bare admin.php?page=hp_settings link in the HivePress menu is exactly
+ * that case, so reading the address would miss this plugin's own tab on any site
+ * where Listings sorts first.
+ *
+ * This file used to say the tab was "not knowable here" and enqueued on every
+ * HivePress settings tab as a result. The premise was wrong, and it was
+ * corrected on 2026-08-30: register_settings() builds the sections and fields
+ * for one tab only and calls add_settings_field() with the prefixed option name
+ * (class-admin.php:287-325), so $wp_settings_fields['hp_settings'] holds
+ * hp_alm_* keys on the Listings tab and on no other - including the no-tab
+ * fallback case that made guessing unsafe. It is the server-side twin of the
+ * [name^="hp_alm_"] gate the script uses, and it is populated in time because
+ * HivePress registers on admin_init priority 10 while this runs on
+ * admin_enqueue_scripts, which wp-admin fires later, from admin-header.php.
+ *
+ * Deliberately NOT satisfied by hp_openai_api_key, the one other field this
+ * plugin registers. That name is generic on purpose so several extensions can
+ * share one key (see hpalm_register_settings), so it is not evidence that the
+ * Integrations tab is ours - and gating on somebody else's field is the mistake
+ * this convention exists to stop.
+ *
+ * @return bool
+ */
+function hpalm_is_settings_tab() {
+	if ( ! isset( $GLOBALS['wp_settings_fields']['hp_settings'] ) || ! is_array( $GLOBALS['wp_settings_fields']['hp_settings'] ) ) {
+		return false;
+	}
+
+	foreach ( $GLOBALS['wp_settings_fields']['hp_settings'] as $hpalm_section ) {
+		foreach ( array_keys( (array) $hpalm_section ) as $hpalm_field ) {
+			if ( 0 === strpos( (string) $hpalm_field, 'hp_alm_' ) ) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Enqueues the shared settings-screen chrome on this plugin's own tab.
+ *
+ * Two gates, answering two different questions. hpalm_is_settings_tab()
+ * decides whether the files load at all, so no other extension's tab pays for
+ * a stylesheet and a script it has no use for. The script keeps its own
+ * [name^="hp_alm_"] test, which decides whether it acts. Neither is a
+ * substitute for the other: dropping the second would make the chrome depend
+ * on the enqueue never regressing.
+ *
+ * The show/hide of dependent fields is not done here; HivePress core drives
+ * that itself from the "_parent" field argument where one is set.
+ *
+ * The script has no dependencies: the shared chrome block is plain DOM work,
+ * and the two Dashicons glyphs it uses come from a stylesheet WordPress loads
+ * on every wp-admin screen itself.
+ *
+ * @param string $hook Current admin page.
+ */
+function hpalm_enqueue_settings_assets( $hook ) {
+	if ( false === strpos( (string) $hook, 'hp_settings' ) || ! hpalm_is_settings_tab() ) {
+		return;
+	}
+
+	wp_enqueue_style(
+		'hpalm-admin-settings',
+		plugins_url( 'assets/css/admin-settings.css', __FILE__ ),
+		[],
+		hpalm_get_version()
+	);
+
+	wp_enqueue_script(
+		'hpalm-admin-settings',
+		plugins_url( 'assets/js/admin-settings.js', __FILE__ ),
+		[],
+		hpalm_get_version(),
+		true
+	);
+
+	wp_localize_script(
+		'hpalm-admin-settings',
+		'hpalmSettingsData',
+		[
+			'labels' => [
+				// The colon is part of the wording: it reads as a lead-in to
+				// the links that follow it, not as a heading over them. Every
+				// extension in this family uses this exact string, so two of
+				// them never label the same control differently.
+				'jumpTo'    => esc_html__( 'Jump to a section:', 'listing-moderation-for-hivepress' ),
+				'save'      => esc_html__( 'Save Changes', 'listing-moderation-for-hivepress' ),
+				'backToTop' => esc_html__( 'Back to top', 'listing-moderation-for-hivepress' ),
+			],
+		]
+	);
+}
+
 if ( is_admin() ) {
 	add_action( 'admin_enqueue_scripts', 'hpalm_admin_pill_styles' );
+	add_action( 'admin_enqueue_scripts', 'hpalm_enqueue_settings_assets' );
 	add_filter( 'manage_hp_listing_posts_columns', 'hpalm_add_admin_columns', 11 );
 	add_action( 'manage_hp_listing_posts_custom_column', 'hpalm_render_admin_columns', 10, 2 );
 	add_filter( 'manage_edit-hp_listing_sortable_columns', 'hpalm_sortable_columns' );
@@ -3244,24 +3345,33 @@ function hpalm_get_starter_lists() {
  * field on the HivePress settings screen (slug hp_settings, verified).
  *
  * Restricted to the Listings tab, the only tab holding the two textareas it
- * fills. The tab defaults to the first one when absent or unrecognised
- * (Admin::get_settings_tab, verified), and Listings is that first tab, so an
- * absent tab argument counts as the Listings tab here too.
+ * fills, and asked of the fields HivePress registered rather than of the
+ * address - see hpalm_is_settings_tab().
+ *
+ * READ THIS BEFORE "SIMPLIFYING" IT BACK. Until 1.7.2 this compared
+ * $_GET['tab'] against 'listings' and defaulted the missing tab to 'listings',
+ * with a comment explaining that Listings is the first tab so an absent tab
+ * argument means Listings. That default was doing real work: without it the
+ * button vanished from the bare admin.php?page=hp_settings URL, which is where
+ * the HivePress menu's own Settings link goes. It was also correct only by
+ * coincidence - it hard-codes today's tab order, which this plugin does not
+ * own. Measured on 2026-08-30 with a throwaway mu-plugin sorting the Gallery
+ * tab first: on the bare URL the old gate printed the buttons and the note
+ * "Add a starter list, then review it and save" onto the **Gallery** tab, where
+ * neither textarea exists. The field test has no such assumption: it is true on
+ * the tab carrying this plugin's fields and false everywhere else, whatever
+ * the address says and whatever order the tabs happen to be in.
  *
  * Client-side only: the button merges the starter list into the two
  * textareas (deduplicated) and the admin still reviews and clicks Save
  * Changes, so no AJAX endpoint or nonce surface exists beyond the
- * manage_options requirement of the page itself.
+ * manage_options requirement of the page itself. The script keeps its own
+ * check that both textareas are on the page, which is the second half of the
+ * pair: this decides whether the block is printed, that decides whether it
+ * acts.
  */
 function hpalm_render_import_button() {
-	// $_GET values can be arrays (?page[]=x). sanitize_key() itself survives
-	// that (it returns '' for non-scalars), but the guard keeps the intent
-	// explicit and the value provably a string before comparison: a
-	// non-string page can never be the settings screen.
-	$page = ( isset( $_GET['page'] ) && is_string( $_GET['page'] ) ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only check of which admin screen is shown; no state is changed.
-	$tab  = ( isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'listings'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
-
-	if ( 'hp_settings' !== $page || 'listings' !== $tab || ! current_user_can( 'manage_options' ) ) {
+	if ( ! current_user_can( 'manage_options' ) || ! hpalm_is_settings_tab() ) {
 		return;
 	}
 
