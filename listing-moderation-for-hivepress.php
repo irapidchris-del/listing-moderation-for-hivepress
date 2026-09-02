@@ -3,7 +3,7 @@
  * Plugin Name: Automated Listing Moderation for HivePress
  * Plugin URI:  https://github.com/irapidchris-del/listing-moderation-for-hivepress
  * Description: Blocks or risk-scores listing submissions containing blocked words, phrases, regex patterns, phone numbers, email addresses, website URLs, duplicate content or AI-flagged text and photos, with a per-vendor submission limit, a verified-vendor bypass, and a Moderation score column and meta box in the dashboard. Configure under HivePress → Settings → Listings → Automated Moderation.
- * Version:     1.7.3
+ * Version:     1.7.4
  * Author:      ChrisB @ HivePress Community
  * Author URI:  https://community.hivepress.io/u/chrisb/summary
  * License:     GPLv2 or later
@@ -151,7 +151,7 @@ defined( 'ABSPATH' ) || exit;
  * for the updater; this constant follows it.
  */
 if ( ! defined( 'HPALM_VERSION' ) ) {
-	define( 'HPALM_VERSION', '1.7.3' );
+	define( 'HPALM_VERSION', '1.7.4' );
 }
 
 /*
